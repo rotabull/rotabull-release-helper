@@ -40,13 +40,9 @@ async function run() {
     axios
       .get(getLatestReleaseUrl, options)
       .then((response) => {
-        console.log("response is:");
-        console.log(response.data);
         const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
         core.setOutput("release-tag", nextReleaseTag);
         core.setOutput("release-title", `Release ${nextReleaseTag}`);
-        console.log("new release tag will be " + nextReleaseTag);
-        console.log("new release title will be " + `Release ${nextReleaseTag}`);
       })
       .catch((error) => {
         console.log(error);
@@ -55,16 +51,16 @@ async function run() {
     const getPullRequestsUrl =
       "https://api.github.com/repos/rotabull/rotabull/commits";
 
-    let exampleSha = "";
+    let collectedSha = [];
     axios
       .get(getPullRequestsUrl, options)
       .then((response) => {
-        console.log("Commits Response:");
-        console.log(response.data);
-
-        exampleSha = response.data[0].sha;
+        // console.log("Commits Response:");
+        // console.log(response.data);
 
         response.data.forEach((element) => {
+          collectedSha.push(element.sha);
+          console.log("SHA" + element.sha);
           console.log("Commit Message: " + element.commit.message);
           console.log("Commit Author:" + element.commit.author.name);
         });
@@ -73,16 +69,22 @@ async function run() {
         console.log(error);
       });
 
-    const commitDetailUrl = `https://api.github.com/repos/rotabull/rotabull/commits/${exampleSha}`;
-    axios
-      .get(commitDetailUrl, options)
-      .then((response) => {
-        console.log("Example Commit Detail Response:");
-        console.log(response.data);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    collectedSha.forEach((item) => {
+      axios
+        .get(
+          `https://api.github.com/repos/rotabull/rotabull/commits/${item}/pulls`,
+          options
+        )
+        .then((response) => {
+          console.log("Example SHA Response:");
+          console.log(response.data);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    });
+
+    /// end of catch
   } catch (error) {
     core.setFailed(error.message);
   }

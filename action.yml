@@ -11,6 +11,12 @@ inputs:
 outputs:
   time: # id of output
     description: "The time we greeted you"
+  release-title:
+    description: "Release title"
+  release-tag:
+    description: "Release tag"
+  # release-body:
+  #   description: "Release summary notes"
 runs:
   using: "node12"
   main: "index.js"

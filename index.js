@@ -30,6 +30,7 @@ async function run() {
 
     const options = {
       headers: {
+        Accept: "application/vnd.github.groot-preview+json",
         "Content-Type": "application/json",
         Authorization: `token ${githubToken}`,
       },

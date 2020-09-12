@@ -64,7 +64,7 @@ async function run() {
 
         exampleSha = response.data[0].sha;
 
-        response.data.array.forEach((element) => {
+        response.data.forEach((element) => {
           console.log("Commit Message: " + element.commit.message);
           console.log("Commit Author:" + element.commit.author.name);
         });

@@ -53,11 +53,11 @@ async function run() {
       });
 
     const getPullRequestsUrl =
-      "https://api.github.com/repos/rotabull/rotabull/pulls";
+      "https://api.github.com/repos/rotabull/rotabull/commits";
     axios
       .get(getPullRequestsUrl, options)
       .then((response) => {
-        console.log("Pull Requests Response:");
+        console.log("Commits Response:");
         console.log(response);
       })
       .catch((error) => {

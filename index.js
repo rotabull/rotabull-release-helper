@@ -54,11 +54,31 @@ async function run() {
 
     const getPullRequestsUrl =
       "https://api.github.com/repos/rotabull/rotabull/commits";
+
+    let exampleSha = "";
     axios
       .get(getPullRequestsUrl, options)
       .then((response) => {
         console.log("Commits Response:");
-        console.log(response);
+        console.log(response.data);
+
+        exampleSha = response.data[0].sha;
+
+        response.data.array.forEach((element) => {
+          console.log("Commit Message: " + element.commit.message);
+          console.log("Commit Author:" + element.commit.author.name);
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    const commitDetailUrl = `https://api.github.com/repos/rotabull/rotabull/commits/${exampleSha}`;
+    axios
+      .get(commitDetailUrl, options)
+      .then((response) => {
+        console.log("Example Commit Detail Response:");
+        console.log(response.data);
       })
       .catch((error) => {
         console.log(error);

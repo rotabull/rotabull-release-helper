@@ -30,7 +30,7 @@ async function run() {
 
     const options = {
       headers: {
-        Accept: "application/vnd.github.groot-preview+json",
+        Accept: "application/vnd.github.v3+json",
         "Content-Type": "application/json",
         Authorization: `token ${githubToken}`,
       },
@@ -52,7 +52,7 @@ async function run() {
     const getPullRequestsUrl =
       "https://api.github.com/repos/rotabull/rotabull/commits";
 
-    let collectedSha = [];
+    // let collectedSha = [];
     axios
       .get(getPullRequestsUrl, options)
       .then((response) => {
@@ -70,20 +70,18 @@ async function run() {
         console.log(error);
       });
 
-    collectedSha.forEach((item) => {
-      axios
-        .get(
-          `https://api.github.com/repos/rotabull/rotabull/commits/${item}/pulls`,
-          options
-        )
-        .then((response) => {
-          console.log("Example SHA Response:");
-          console.log(response.data);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    });
+    axios
+      .get(
+        `https://api.github.com/repos/rotabull/rotabull/pulls?state=closed`,
+        options
+      )
+      .then((response) => {
+        console.log("Closed PRs:");
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
 
     /// end of catch
   } catch (error) {

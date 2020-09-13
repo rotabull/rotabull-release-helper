@@ -138,8 +138,10 @@ function extractClubhouseNumberFromPRBody(body) {
 function extractClubhouNumberFromPRTitle(title) {
   var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
   var arr = title.match(rx);
-  console.log("number is " + arr[0]);
-  return arr === null ? null : arr[0];
+  if (arr === null) return null;
+
+  var rx2 = /[0-9][0-9][0-9][0-9]/g;
+  return arr[0].match(rx2)[0];
 }
 
 function extractCategory(branchName) {
@@ -157,8 +159,15 @@ function extractCategory(branchName) {
 
 function extractAllClubhouseNumbersFromLastRelease(body) {
   var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
+  var rx2 = /[0-9][0-9][0-9][0-9]/g;
   var arr = body.match(rx);
-  return arr === null ? null : arr;
+  if (arr === null) return null;
+  const newArray = [];
+  arr.forEach((element) => {
+    newArray.push(element.match(rx2)[0]);
+  });
+
+  return newArray;
 }
 
 function extractTitleIgnoringClubhouseNumber(title) {

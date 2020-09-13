@@ -9,8 +9,6 @@ inputs:
     description: "github token"
     required: true
 outputs:
-  time: # id of output
-    description: "The time we greeted you"
   release-title:
     description: "Release title"
   release-tag:

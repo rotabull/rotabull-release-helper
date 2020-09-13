@@ -3,20 +3,17 @@ const github = require("@actions/github");
 const axios = require("axios").default;
 const moment = require("moment");
 
+const newLine = "\r\n";
+const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
 async function run() {
   try {
     // `who-to-greet` input defined in action metadata file
     const nameToGreet = core.getInput("who-to-greet");
     const githubToken = core.getInput("github-token");
-    console.log(`Github Token is ${githubToken}`);
-    console.log(`Hello ${nameToGreet}!`);
-
-    const time = new Date().toTimeString();
-    core.setOutput("time", time);
 
     // Get the JSON webhook payload for the event that triggered the workflow
-    const payload = JSON.stringify(github.context.payload, undefined, 2);
-    console.log(`The event payload: ${payload}`);
+    // const payload = JSON.stringify(github.context.payload, undefined, 2);
+    // console.log(`The event payload: ${payload}`);
 
     // Generate tag date
     // 1. get last release tag which draft == false and prerelease == false; 2. see if it matches certain format and is today's date
@@ -49,7 +46,7 @@ async function run() {
     //   });
 
     const lastReleaseInfo = getReleaseResponse().data.body;
-    const lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromRelease(
+    const lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
       lastReleaseInfo
     );
 
@@ -96,24 +93,24 @@ async function run() {
     //     console.log(error);
     //   });
 
-    const bugfixes = "";
-    const features = "";
-    const chore = "";
-
     let data = getClosedPrResponseData();
     // we sort them in desc merged_at order since the API does not have an option to sort on merged_at
     data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
 
     for (var i = 0, n = data.length; i < n; ++i) {
       if (data[i].merged_at === null) continue;
-      const PRClubhouseNumber = extractClubhouseStoryNumber(data[i]);
+      const PRClubhouseNumber = extractClubhouseStoryNumber(
+        data[i].title,
+        data[i].body
+      );
       if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
         break;
       }
 
-      const branchName = data[i].head.ref; //to know its category
+      const branchName = data[i].head.ref;
       const category = extractCategory(branchName);
-      console.log("=====> Category is : " + category);
+
+      const title = extractTitleIgnoringClubhouseNumber(data[i].title);
     }
     /// end of catch
   } catch (error) {
@@ -123,22 +120,25 @@ async function run() {
 
 run();
 
-function extractClubhouseStoryNumber(data) {
-  let clubhouseNumber = extractClubhouNumberFromPRTitle(data.title);
+function extractClubhouseStoryNumber(title, body) {
+  let clubhouseNumber = extractClubhouNumberFromPRTitle(title);
   if (clubhouseNumber === null) {
-    clubhouseNumber = extractClubhouseNumberFromPRBody(data.body);
+    clubhouseNumber = extractClubhouseNumberFromPRBody(body);
   }
   return clubhouseNumber;
 }
 function extractClubhouseNumberFromPRBody(body) {
   var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9][0-9][0-9][0-9]/g;
   var arr = body.match(rx);
-  return arr === null ? null : arr[0];
+  if (arr === null) return null;
+  const data = arr[0].split("/");
+  return data[data.length - 1];
 }
 
 function extractClubhouNumberFromPRTitle(title) {
   var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
   var arr = title.match(rx);
+  console.log("number is " + arr[0]);
   return arr === null ? null : arr[0];
 }
 
@@ -154,10 +154,18 @@ function extractCategory(branchName) {
   }
   return "Chore";
 }
-function extractAllClubhouseNumbersFromRelease(body) {
+
+function extractAllClubhouseNumbersFromLastRelease(body) {
   var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
   var arr = body.match(rx);
   return arr === null ? null : arr;
+}
+
+function extractTitleIgnoringClubhouseNumber(title) {
+  const rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
+  const replaceWith = "";
+  const after = title.replace(rx, replaceWith);
+  return after.trim();
 }
 function getNextReleaseTag(lastReleaseTag) {
   console.log("Last release tag is " + lastReleaseTag);

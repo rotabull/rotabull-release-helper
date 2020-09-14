@@ -1,13 +1,21 @@
 name: "Hello World"
 description: "Greet someone and record the time"
 inputs:
-  who-to-greet: # id of input
-    description: "Who to greet"
-    required: true
-    default: "World"
   github-token:
     description: "github token"
     required: true
+  action-type:
+    description: "promote or release"
+    required: true
+  heroku-api-key:
+    description: "Heroku API Key"
+    required: true
+  heroku-email:
+    description: "Heroku Email"
+    required: true
+  heroku-app-name:
+    description: "Heroku App Name"
+    default: "rotabull-staging"
 outputs:
   release-title:
     description: "Release title"
@@ -15,6 +23,8 @@ outputs:
     description: "Release tag"
   release-body:
     description: "Release summary notes"
+  promote-status:
+    description: "Heroku Promote Status"
 runs:
   using: "node12"
   main: "index.js"

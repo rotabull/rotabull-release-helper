@@ -119,33 +119,6 @@ function githubRelease() {
   // If we can't find the PR based off the title, it is part of our next new release
   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
   // because if one the latest has been released, then all the ones older than that one has already been released
-  const opts = {
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: {
-      type: "mrkdwn",
-      text: lastReleaseBody,
-    },
-  };
-  const getSlackWebhookURL =
-    "https://hooks.slack.com/services/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";
-
-  axios
-    .post(getSlackWebhookURL, opts)
-    .then((response) => {
-      const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
-
-      lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
-        response.data.body
-      );
-
-      core.setOutput("release-tag", nextReleaseTag);
-      core.setOutput("release-title", `Release ${nextReleaseTag}`);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
 
   const getClosedPRsURL =
     "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed";

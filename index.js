@@ -54,7 +54,8 @@ function herokuPromote() {
     execSync(file);
     console.log("Created and wrote to ~./netrc");
 
-    const output = execSync("heroku container:login");
+    var output = execSync("heroku login");
+    output = execSync("a");
 
     if (output === 0) {
       console.log("Successfully promoted heroku app " + heroku.app_name);

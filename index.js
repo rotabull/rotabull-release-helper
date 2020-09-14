@@ -6,7 +6,7 @@ const { execSync } = require("child_process");
 
 const REPO = "rotabull";
 const OWNER = "rotabull";
-const newLine = "\n";
+const newLine = "\r\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
 var lastReleaseClubhouseNumbers = [];
 
@@ -54,8 +54,8 @@ function herokuPromote() {
     console.log("Created and wrote to ~./netrc");
 
     const output = execSync("heroku login");
-    const output2 = execSync("a");
-    if (output2 === 0) {
+
+    if (output === 0) {
       console.log("Successfully promoted heroku app " + heroku.app_name);
     }
     // const output = execSync(`heroku pipelines:promote -a ${heroku.app_name}`);

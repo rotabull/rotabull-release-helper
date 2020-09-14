@@ -3,6 +3,8 @@ const github = require("@actions/github");
 const axios = require("axios").default;
 const moment = require("moment");
 
+const REPO = "rotabull";
+const OWNER = "rotabull";
 const newLine = "\r\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
 const lastReleaseClubhouseNumbers = [];
@@ -34,8 +36,7 @@ async function run() {
       },
     };
 
-    const getLatestReleaseUrl =
-      "https://api.github.com/repos/rotabull/rotabull/releases/latest";
+    const getLatestReleaseUrl = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`;
     axios
       .get(getLatestReleaseUrl, options)
       .then((response) => {
@@ -90,7 +91,7 @@ async function run() {
         }
 
         const releaseBody = composeReleaseBody(collection);
-        console.log(releaseBody);
+        console.log("Release body will be: " + releaseBody);
         core.setOutput("release-body", releaseBody);
       })
       .catch((error) => {

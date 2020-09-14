@@ -7,7 +7,7 @@ const REPO = "rotabull";
 const OWNER = "rotabull";
 const newLine = "\r\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
-const lastReleaseClubhouseNumbers = [];
+var lastReleaseClubhouseNumbers = [];
 
 let collection = {
   Feature: [],

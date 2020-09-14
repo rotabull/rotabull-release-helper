@@ -33,6 +33,7 @@ async function run() {
 run();
 
 function herokuPromote() {
+  console.log("debug");
   const createCatFile = ({ email, api_key }) => `cat >~/.netrc <<EOF
   machine api.heroku.com
     login ${email}

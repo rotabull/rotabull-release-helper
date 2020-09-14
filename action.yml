@@ -13,8 +13,8 @@ outputs:
     description: "Release title"
   release-tag:
     description: "Release tag"
-  # release-body:
-  #   description: "Release summary notes"
+  release-body:
+    description: "Release summary notes"
 runs:
   using: "node12"
   main: "index.js"

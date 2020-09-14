@@ -5,10 +5,15 @@ const moment = require("moment");
 
 const newLine = "\r\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
+const lastReleaseClubhouseNumbers = [];
+
+let collection = {
+  Feature: [],
+  Bugfix: [],
+  Chore: [],
+};
 async function run() {
   try {
-    // `who-to-greet` input defined in action metadata file
-    const nameToGreet = core.getInput("who-to-greet");
     const githubToken = core.getInput("github-token");
 
     // Get the JSON webhook payload for the event that triggered the workflow
@@ -16,10 +21,7 @@ async function run() {
     // console.log(`The event payload: ${payload}`);
 
     // Generate tag date
-    // 1. get last release tag which draft == false and prerelease == false; 2. see if it matches certain format and is today's date
-    // 3. If not, use today's date; otherwise increment today's date by like .1,
-    // 4. If it does not match the certain format, then use today's date as a starting point
-    // call curl \
+    // curl \
     // -X GET https://api.github.com/repos/$OWNER/$REPO/releases \
     // -H "Content-Type: application/json" \
     // -H "Authorization: token $GITHUB_TOKEN" \
@@ -32,86 +34,94 @@ async function run() {
       },
     };
 
-    // const getLatestReleaseUrl =
-    //   "https://api.github.com/repos/rotabull/rotabull/releases/latest";
-    // axios
-    //   .get(getLatestReleaseUrl, options)
-    //   .then((response) => {
-    //     const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
-    //     core.setOutput("release-tag", nextReleaseTag);
-    //     core.setOutput("release-title", `Release ${nextReleaseTag}`);
-    //   })
-    //   .catch((error) => {
-    //     console.log(error);
-    //   });
+    const getLatestReleaseUrl =
+      "https://api.github.com/repos/rotabull/rotabull/releases/latest";
+    axios
+      .get(getLatestReleaseUrl, options)
+      .then((response) => {
+        const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
 
-    const lastReleaseInfo = getReleaseResponse().data.body;
-    const lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
-      lastReleaseInfo
-    );
+        lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
+          response.data.body
+        );
 
-    lastReleaseClubhouseNumbers.forEach((item) => {
-      console.log("Release Info includes:" + item);
-    });
-    //might not need anymore
-    // const getPullRequestsUrl =
-    //   "https://api.github.com/repos/rotabull/rotabull/commits";
+        core.setOutput("release-tag", nextReleaseTag);
+        core.setOutput("release-title", `Release ${nextReleaseTag}`);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
 
-    // // let collectedSha = [];
-    // axios
-    //   .get(getPullRequestsUrl, options)
-    //   .then((response) => {
-    //     // console.log("Commits Response:");
-    //     // console.log(response.data);
+    // const lastReleaseInfo = getReleaseResponse().data.body;
+    // lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
+    //   lastReleaseInfo
+    // );
 
-    //     response.data.forEach((element) => {
-    //       console.log("SHA" + element.sha);
-    //       console.log("Commit Message: " + element.commit.message);
-    //       console.log("Commit Author:" + element.commit.author.name);
-    //     });
-    //   })
-    //   .catch((error) => {
-    //     console.log(error);
-    //   });
-
-    // Collect the titles or prs (or maybe clubhouse ID) being merged from last release based off the summary
-    // Call the Closed PR API endpoint, with conditions merged_at is not null
-    // If we can't find the PR based off the title, it is part of our next release, add to body
-    // If we found one matching any one of the collections we have matched, then break searching more down the pipe
+    // Collect PRs (clubhouse story ID) being merged from last release based off last release summary
+    // Call the Closed PR API endpoint, sort based on merged timestamp
+    // If we can't find the PR based off the title, it is part of our next new release
+    // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
     // because if one the latest has been released, then all the ones older than that one has already been released
-    // if a PR does not have a category branch name then use tag/labels
-    // axios
-    //   .get(
-    //     `https://api.github.com/repos/rotabull/rotabull/pulls?state=closed`,
-    //     options
-    //   )
-    //   .then((response) => {
-    //     console.log("Closed PRs:");
-    //     console.log(response.data);
-    //   })
-    //   .catch((error) => {
-    //     console.log(error);
-    //   });
 
-    let data = getClosedPrResponseData();
-    // we sort them in desc merged_at order since the API does not have an option to sort on merged_at
-    data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+    const getClosedPRsURL =
+      "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed";
+    axios
+      .get(getClosedPRsURL, options)
+      .then((response) => {
+        console.log("Closed PRs:");
+        var data = response.data;
+        data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
 
-    for (var i = 0, n = data.length; i < n; ++i) {
-      if (data[i].merged_at === null) continue;
-      const PRClubhouseNumber = extractClubhouseStoryNumber(
-        data[i].title,
-        data[i].body
-      );
-      if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
-        break;
-      }
+        for (var i = 0, n = data.length; i < n; ++i) {
+          if (data[i].merged_at === null) continue;
+          const PRClubhouseNumber = extractClubhouseStoryNumber(
+            data[i].title,
+            data[i].body
+          );
+          if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
+            break;
+          }
 
-      const branchName = data[i].head.ref;
-      const category = extractCategory(branchName);
+          const branchName = data[i].head.ref;
+          const category = extractCategory(branchName);
+          const title = extractTitleIgnoringClubhouseNumber(data[i].title);
 
-      const title = extractTitleIgnoringClubhouseNumber(data[i].title);
-    }
+          saveToCollection(category, title, PRClubhouseNumber);
+        }
+
+        const releaseBody = composeReleaseBody(collection);
+        console.log(releaseBody);
+        core.setOutput("release-body", releaseBody);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    // let data = getClosedPrResponseData();
+    // we sort them in desc merged_at order since the API does not have an option to sort on merged date
+    // data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+
+    // for (var i = 0, n = data.length; i < n; ++i) {
+    //   if (data[i].merged_at === null) continue;
+    //   const PRClubhouseNumber = extractClubhouseStoryNumber(
+    //     data[i].title,
+    //     data[i].body
+    //   );
+    //   if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
+    //     break;
+    //   }
+
+    //   const branchName = data[i].head.ref;
+    //   const category = extractCategory(branchName);
+
+    //   const title = extractTitleIgnoringClubhouseNumber(data[i].title);
+    //   saveToCollection(category, title, PRClubhouseNumber);
+    // }
+
+    // const releaseBody = composeReleaseBody(collection);
+    // console.log(releaseBody);
+    // core.setOutput("release-body", releaseBody);
+
     /// end of catch
   } catch (error) {
     core.setFailed(error.message);
@@ -120,13 +130,42 @@ async function run() {
 
 run();
 
+function composeReleaseBody(collection) {
+  const header = "## What's Changed" + newLine;
+
+  var featureNotes = newLine + "###  Features -- ⭐️" + newLine;
+  collection["Feature"].forEach((element) => {
+    featureNotes += newLine + "* " + element + newLine;
+  });
+
+  var bugfixNotes = newLine + "### Bugfixes -- 🐞" + newLine;
+  collection["Bugfix"].forEach((element) => {
+    bugfixNotes += newLine + "* " + element + newLine;
+  });
+
+  var choreNotes = newLine + "### Chores -- ⚙️" + newLine;
+  collection["Chore"].forEach((element) => {
+    choreNotes += newLine + "* " + element + newLine;
+  });
+
+  return header + featureNotes + bugfixNotes + choreNotes;
+}
+
+function saveToCollection(category, title, PRClubhouseNumber) {
+  console.log("category is:" + category);
+  const content = `${title} [ch${PRClubhouseNumber}](${clubhouseBaseURL}${PRClubhouseNumber})`;
+  const titles = collection[category];
+  titles[titles.length] = content;
+}
+
 function extractClubhouseStoryNumber(title, body) {
-  let clubhouseNumber = extractClubhouNumberFromPRTitle(title);
+  let clubhouseNumber = extractClubhouseNumberFromPRTitle(title);
   if (clubhouseNumber === null) {
     clubhouseNumber = extractClubhouseNumberFromPRBody(body);
   }
   return clubhouseNumber;
 }
+
 function extractClubhouseNumberFromPRBody(body) {
   var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9][0-9][0-9][0-9]/g;
   var arr = body.match(rx);
@@ -135,7 +174,7 @@ function extractClubhouseNumberFromPRBody(body) {
   return data[data.length - 1];
 }
 
-function extractClubhouNumberFromPRTitle(title) {
+function extractClubhouseNumberFromPRTitle(title) {
   var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
   var arr = title.match(rx);
   if (arr === null) return null;
@@ -162,11 +201,7 @@ function extractAllClubhouseNumbersFromLastRelease(body) {
   var rx2 = /[0-9][0-9][0-9][0-9]/g;
   var arr = body.match(rx);
   if (arr === null) return null;
-  const newArray = [];
-  arr.forEach((element) => {
-    newArray.push(element.match(rx2)[0]);
-  });
-
+  const newArray = arr.map((element) => element.match(rx2)[0]);
   return newArray;
 }
 
@@ -190,6 +225,7 @@ function getNextReleaseTag(lastReleaseTag) {
     return `v${date}`;
   }
 }
+// =======================
 function getReleaseResponse() {
   const res = {
     data: {

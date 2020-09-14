@@ -134,20 +134,32 @@ run();
 function composeReleaseBody(collection) {
   const header = "## What's Changed" + newLine;
 
-  var featureNotes = newLine + "###  Features -- ⭐️" + newLine;
-  collection["Feature"].forEach((element) => {
-    featureNotes += newLine + "* " + element + newLine;
-  });
+  const featureCollection = collection["Feature"];
+  var featureNotes = "";
+  if (featureCollection.length > 0) {
+    featureNotes = newLine + "###  Features -- ⭐️" + newLine;
+    featureCollection.forEach((element) => {
+      featureNotes += newLine + "* " + element + newLine;
+    });
+  }
 
-  var bugfixNotes = newLine + "### Bugfixes -- 🐞" + newLine;
-  collection["Bugfix"].forEach((element) => {
-    bugfixNotes += newLine + "* " + element + newLine;
-  });
+  const bugfixCollection = collection["Bugfix"];
+  var bugfixNotes = "";
+  if (bugfixCollection.length > 0) {
+    bugfixNotes = newLine + "### Bugfixes -- 🐞" + newLine;
+    bugfixCollection.forEach((element) => {
+      bugfixNotes += newLine + "* " + element + newLine;
+    });
+  }
 
-  var choreNotes = newLine + "### Chores -- ⚙️" + newLine;
-  collection["Chore"].forEach((element) => {
-    choreNotes += newLine + "* " + element + newLine;
-  });
+  const choreCollection = collection["Chore"];
+  var choreNotes = "";
+  if (choreCollection.length > 0) {
+    choreNotes = newLine + "### Chores -- ⚙️" + newLine;
+    choreCollection.forEach((element) => {
+      choreNotes += newLine + "* " + element + newLine;
+    });
+  }
 
   return header + featureNotes + bugfixNotes + choreNotes;
 }

@@ -17,7 +17,7 @@ let collection = {
 };
 
 async function run() {
-  let actionType = "promote";
+  let actionType = core.getInput("action-type");
   try {
     if (actionType === "release") {
       githubRelease();
@@ -48,12 +48,14 @@ function herokuPromote() {
   heroku.email = core.getInput("heroku-email");
   heroku.app_name = core.getInput("heroku-app-name"); //rotabull-staging
   try {
-    execSync(createCatFile(heroku));
+    const file = createCatFile(heroku);
+    console.log(file);
+    execSync(file);
     console.log("Created and wrote to ~./netrc");
 
     const output = execSync("heroku login");
-
-    if (output === 0) {
+    const output2 = execSync("a");
+    if (output2 === 0) {
       console.log("Successfully promoted heroku app " + heroku.app_name);
     }
     // const output = execSync(`heroku pipelines:promote -a ${heroku.app_name}`);

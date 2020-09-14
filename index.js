@@ -6,7 +6,7 @@ const { execSync } = require("child_process");
 
 const REPO = "rotabull";
 const OWNER = "rotabull";
-const newLine = "\r\n";
+const newLine = "\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
 var lastReleaseClubhouseNumbers = [];
 

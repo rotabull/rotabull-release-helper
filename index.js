@@ -49,17 +49,17 @@ function herokuPromote() {
   heroku.email = core.getInput("heroku-email");
   heroku.app_name = core.getInput("heroku-app-name"); //rotabull-staging
   try {
-    const file = createCatFile(heroku);
-    console.log(file);
-    execSync(file);
+    execSync(createCatFile(heroku));
     console.log("Created and wrote to ~./netrc");
 
-    var output = execSync("heroku login");
-    output = execSync("a");
+    execSync("cat ~/.netrc");
+    console.log("test...");
+    const output = vexecSync("heroku login");
 
-    if (output === 0) {
-      console.log("Successfully promoted heroku app " + heroku.app_name);
-    }
+    console.log("console" + output);
+    // if (output === 0) {
+    //   console.log("Successfully promoted heroku app " + heroku.app_name);
+    // }
     // const output = execSync(`heroku pipelines:promote -a ${heroku.app_name}`);
 
     // core.setOutput("promote-status", output);

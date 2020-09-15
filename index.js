@@ -28,7 +28,7 @@ function run() {
       promoteOnHeroku();
       setTimeout(() => {
         status = checkPromotionStatus(RETRIES, TIMEOUT);
-      }, timeout);
+      }, TIMEOUT);
       core.setOutput("promote-status", status);
     }
     /// end of catch

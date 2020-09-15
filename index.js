@@ -73,7 +73,7 @@ function promoteOnHeroku() {
   axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
-      console.log("promote to pipeline response: " + reponse);
+      console.log("promote to pipeline response: " + response);
       pipelinePromotionID = response["pipeline"]["id"];
     })
     .catch((error) => {

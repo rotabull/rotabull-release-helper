@@ -70,7 +70,7 @@ function promoteOnHeroku() {
   };
 
   //create pipeline promotion and retrieve the pipeline promotion ID
-  await axios
+  axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
       console.log("promote to pipeline response: ");
@@ -84,6 +84,7 @@ function promoteOnHeroku() {
 }
 
 function checkPromotionStatus(retries, timeout) {
+  console.log("promotion id?" + pipelinePromotionID);
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
   var status = "";
   const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;

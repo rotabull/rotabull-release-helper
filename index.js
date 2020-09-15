@@ -8,11 +8,11 @@ const REPO = "rotabull";
 const OWNER = "rotabull";
 const newLine = "\r\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
-const RETRIES = 30;
-const TIMEOUT = 60000;
+const RETRIES = 5;
+const TIMEOUT = 10000;
 var pipelinePromotionID = "";
 var lastReleaseClubhouseNumbers = [];
-var lastReleaseBody = "";
+
 let collection = {
   Feature: [],
   Bugfix: [],
@@ -73,6 +73,7 @@ function promoteOnHeroku() {
   axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
+      console.log("promote to pipeline response: " + reponse);
       pipelinePromotionID = response["pipeline"]["id"];
     })
     .catch((error) => {
@@ -92,6 +93,7 @@ function checkPromotionStatus(retries, timeout) {
   axios
     .post(checkPromotionStatusURL, options)
     .then((response) => {
+      console.log("checking promotion status " + retries + ":" + response);
       status = response["status"];
       if (status === "succeeded" || status === "failed") return status;
       if (retries > 0) {
@@ -125,7 +127,7 @@ function githubRelease() {
     .get(getLatestReleaseUrl, options)
     .then((response) => {
       const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
-      lastReleaseBody = response.data.body;
+
       lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
         response.data.body
       );

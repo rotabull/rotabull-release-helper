@@ -10,12 +10,6 @@ inputs:
   heroku-api-key:
     description: "Heroku API Key"
     required: true
-  heroku-email:
-    description: "Heroku Email"
-    required: true
-  heroku-app-name:
-    description: "Heroku App Name"
-    default: "rotabull-staging"
   pipeline-id:
     description: "Heroku Pipline ID"
   source-app-id:

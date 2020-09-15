@@ -82,6 +82,7 @@ function promoteOnHeroku() {
 }
 
 function checkPromotionStatus(retries, timeout) {
+  const HEROKU_API_KEY = core.getInput("heroku-api-key");
   var status = "";
   const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;
   const options = {

@@ -102,13 +102,18 @@ function checkPromotionStatus(retries, timeout) {
     .then((response) => {
       console.log("checking promotion status " + retries + ":" + response);
       status = response.data.status;
-      if (status === "succeeded" || status === "failed") return status;
+      if (
+        status === "succeeded" ||
+        status === "completed" ||
+        status === "failed"
+      )
+        return status;
       if (retries > 0) {
         setTimeout(() => {
           return checkPromotionStatus(retries - 1);
         }, timeout);
       } else {
-        throw new Error(response);
+        return "RETRY MAXIMUM REACHED";
       }
     })
     .catch((error) => {

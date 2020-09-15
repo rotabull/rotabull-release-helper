@@ -70,7 +70,7 @@ function promoteOnHeroku() {
   };
 
   //create pipeline promotion and retrieve the pipeline promotion ID
-  axios
+  await axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
       console.log("promote to pipeline response: ");

@@ -153,7 +153,7 @@ function githubRelease() {
       const block =
         '{"blocks": [{"type": "divider"},{"type": "section","text": {"type": "mrkdwn","text": "*Features -- :star:*"}}]}';
 
-      core.setOutput("slack-message", slackMessageBlockKit);
+      core.setOutput("slack-message", block);
     })
     .catch((error) => {
       console.log(error);

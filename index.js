@@ -8,6 +8,9 @@ const REPO = "rotabull";
 const OWNER = "rotabull";
 const newLine = "\r\n";
 const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
+const RETRIES = 30;
+const TIMEOUT = 60000;
+var pipelinePromotionID = "";
 var lastReleaseClubhouseNumbers = [];
 var lastReleaseBody = "";
 let collection = {
@@ -22,7 +25,9 @@ async function run() {
     if (actionType === "release") {
       githubRelease();
     } else if (actionType === "promote") {
-      herokuPromote();
+      promoteOnHeroku();
+      const status = checkPromotionStatus(RETRIES, TIMEOUT);
+      core.setOutput("promote-status", status);
     }
     /// end of catch
   } catch (error) {
@@ -32,57 +37,79 @@ async function run() {
 
 run();
 
-function herokuPromote() {
-  console.log("debug");
-  const createCatFile = ({ email, api_key }) => `cat >~/.netrc <<EOF
-  machine api.heroku.com
-    login ${email}
-    password ${api_key}
-  machine git.heroku.com
-    login ${email}
-    password ${api_key}
-  EOF`;
+function promoteOnHeroku() {
+  const PIPELINE_ID = core.getInput("pipeline-id");
+  const SOURCE_APP_ID = core.getInput("source-app-id");
+  const TARGET_APP_ID = core.getInput("target-app-id");
+  const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
-  let heroku = {};
+  const herokuPromoteURL = "https://api.heroku.com/pipeline-promotions";
+  const options = {
+    headers: {
+      Accept: "application/vnd.heroku+json; version=3",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${HEROKU_API_KEY}`,
+    },
+  };
+  const data = {
+    pipeline: {
+      id: PIPELINE_ID,
+    },
+    source: {
+      app: {
+        id: SOURCE_APP_ID,
+      },
+    },
+    targets: [
+      {
+        app: {
+          id: TARGET_APP_ID,
+        },
+      },
+    ],
+  };
 
-  heroku.api_key = core.getInput("heroku-api-key");
-  heroku.email = core.getInput("heroku-email");
-  heroku.app_name = core.getInput("heroku-app-name"); //rotabull-staging
-  try {
-    execSync(createCatFile(heroku));
-    console.log("Created and wrote to ~./netrc");
-
-    execSync("cat ~/.netrc");
-    console.log("test...");
-    const output = execSync("heroku login");
-
-    console.log("console" + output);
-    // if (output === 0) {
-    //   console.log("Successfully promoted heroku app " + heroku.app_name);
-    // }
-    // const output = execSync(`heroku pipelines:promote -a ${heroku.app_name}`);
-
-    // core.setOutput("promote-status", output);
-
-    // if (output === 0) {
-    //   console.log("Successfully promoted heroku app " + heroku.app_name);
-    // }
-  } catch (err) {
-    core.setFailed(err.toString());
-  }
+  //create pipeline promotion and retrieve the pipeline promotion ID
+  axios
+    .post(herokuPromoteURL, data, options)
+    .then((response) => {
+      pipelinePromotionID = response["pipeline"]["id"];
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 }
 
+function checkPromotionStatus(retries, timeout) {
+  var status = "";
+  const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;
+  const options = {
+    headers: {
+      Accept: "application/vnd.heroku+json; version=3",
+      Authorization: `Bearer ${HEROKU_API_KEY}`,
+    },
+  };
+  axios
+    .post(checkPromotionStatusURL, options)
+    .then((response) => {
+      status = response["status"];
+      if (status === "succeeded" || status === "failed") return status;
+      if (retries > 0) {
+        setTimeout(() => {
+          return checkPromotionStatus(retries - 1);
+        }, timeout);
+      } else {
+        throw new Error(response);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+
+  return status;
+}
 function githubRelease() {
   const githubToken = core.getInput("github-token");
-
-  // Get the JSON webhook payload for the event that triggered the workflow
-  // const payload = JSON.stringify(github.context.payload, undefined, 2);
-  // console.log(`The event payload: ${payload}`);
-  // Generate tag date
-  // curl \
-  // -X GET https://api.github.com/repos/$OWNER/$REPO/releases \
-  // -H "Content-Type: application/json" \
-  // -H "Authorization: token $GITHUB_TOKEN" \
 
   const options = {
     headers: {
@@ -92,6 +119,7 @@ function githubRelease() {
     },
   };
 
+  // get last release tag to determine the next release tag
   const getLatestReleaseUrl = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`;
   axios
     .get(getLatestReleaseUrl, options)
@@ -109,16 +137,11 @@ function githubRelease() {
       console.log(error);
     });
 
-  // const lastReleaseInfo = getReleaseResponse().data.body;
-  // lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
-  //   lastReleaseInfo
-  // );
-
   // Collect PRs (clubhouse story ID) being merged from last release based off last release summary
-  // Call the Closed PR API endpoint, sort based on merged timestamp
+  // sort based on merged timestamp
   // If we can't find the PR based off the title, it is part of our next new release
   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
-  // because if one the latest has been released, then all the ones older than that one has already been released
+  // If one latest has been released, then all the ones older than that one must already been released
 
   const getClosedPRsURL =
     "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed";
@@ -149,19 +172,6 @@ function githubRelease() {
       const releaseBody = composeReleaseBody(collection);
       console.log("Release body will be: " + releaseBody);
       core.setOutput("release-body", releaseBody);
-
-      const block = {
-        blocks: [
-          { type: "divider" },
-          {
-            type: "section",
-            text: { type: "mrkdwn", text: "*Features -- :star:*" },
-          },
-        ],
-      };
-
-      console.log(block);
-      core.setOutput("slack-message", JSON.stringify(block));
     })
     .catch((error) => {
       console.log(error);

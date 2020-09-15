@@ -16,6 +16,12 @@ inputs:
   heroku-app-name:
     description: "Heroku App Name"
     default: "rotabull-staging"
+  pipeline-id:
+    description: "Heroku Pipline ID"
+  source-app-id:
+    description: "Heroku Source APP ID"
+  target-app-id:
+    description: "Heroku Target APP ID"
 outputs:
   release-title:
     description: "Release title"

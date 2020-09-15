@@ -94,7 +94,7 @@ function checkPromotionStatus(retries, timeout) {
     },
   };
   axios
-    .post(checkPromotionStatusURL, options)
+    .get(checkPromotionStatusURL, options)
     .then((response) => {
       console.log("checking promotion status " + retries + ":" + response);
       status = response.data.status;

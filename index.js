@@ -20,12 +20,15 @@ let collection = {
 
 function run() {
   let actionType = core.getInput("action-type");
+  let status = "";
   try {
     if (actionType === "release") {
       githubRelease();
     } else if (actionType === "promote") {
       promoteOnHeroku();
-      const status = checkPromotionStatus(RETRIES, TIMEOUT);
+      setTimeout(() => {
+        status = checkPromotionStatus(RETRIES, TIMEOUT);
+      }, timeout);
       core.setOutput("promote-status", status);
     }
     /// end of catch

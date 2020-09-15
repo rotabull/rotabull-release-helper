@@ -76,6 +76,7 @@ function promoteOnHeroku() {
       console.log("promote to pipeline response: ");
       console.log(response.data);
       pipelinePromotionID = response.data.pipeline.id;
+      console.log("pipeline promotion ID" + pipelinePromotionID);
     })
     .catch((error) => {
       console.log(error);

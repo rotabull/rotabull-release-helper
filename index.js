@@ -25,7 +25,6 @@ function run() {
       githubRelease();
     } else if (actionType === "promote") {
       promoteOnHeroku();
-      setTimeout(10000);
       const status = checkPromotionStatus(RETRIES, TIMEOUT);
       core.setOutput("promote-status", status);
     }

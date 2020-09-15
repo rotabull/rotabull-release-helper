@@ -75,7 +75,7 @@ function promoteOnHeroku() {
     .then((response) => {
       console.log("promote to pipeline response: ");
       console.log(response.data);
-      pipelinePromotionID = response.data["pipeline"]["id"];
+      pipelinePromotionID = response.data.pipeline.id;
     })
     .catch((error) => {
       console.log(error);
@@ -97,7 +97,7 @@ function checkPromotionStatus(retries, timeout) {
     .post(checkPromotionStatusURL, options)
     .then((response) => {
       console.log("checking promotion status " + retries + ":" + response);
-      status = response.data["status"];
+      status = response.data.status;
       if (status === "succeeded" || status === "failed") return status;
       if (retries > 0) {
         setTimeout(() => {

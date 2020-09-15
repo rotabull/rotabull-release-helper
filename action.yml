@@ -25,6 +25,8 @@ outputs:
     description: "Release summary notes"
   promote-status:
     description: "Heroku Promote Status"
+  slack-message:
+    description: "Slack Block Kit Payload"
 runs:
   using: "node12"
   main: "index.js"

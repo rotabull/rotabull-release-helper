@@ -149,6 +149,18 @@ function githubRelease() {
       const releaseBody = composeReleaseBody(collection);
       console.log("Release body will be: " + releaseBody);
       core.setOutput("release-body", releaseBody);
+
+      const block = {
+        blocks: [
+          { type: "divider" },
+          {
+            type: "section",
+            text: { type: "mrkdwn", text: "*Features -- :star:*" },
+          },
+        ],
+      };
+      const slackMessageBlockKit = JSON.parse(block);
+      core.setOutput("slack-message", slackMessageBlockKit);
     })
     .catch((error) => {
       console.log(error);

@@ -71,7 +71,7 @@ function promoteOnHeroku() {
 
   //create pipeline promotion and retrieve the pipeline promotion ID
   axios
-    .post(herokuPromoteURL, JSON.parse(data), options)
+    .post(herokuPromoteURL, data, options)
     .then((response) => {
       console.log("promote to pipeline response: " + JSON.stringify(response));
       pipelinePromotionID = response["pipeline"]["id"];

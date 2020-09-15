@@ -18,7 +18,7 @@ let collection = {
   Chore: [],
 };
 
-async function run() {
+function run() {
   let actionType = core.getInput("action-type");
   try {
     if (actionType === "release") {

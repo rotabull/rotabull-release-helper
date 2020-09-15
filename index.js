@@ -26,8 +26,8 @@ async function run() {
       githubRelease();
     } else if (actionType === "promote") {
       promoteOnHeroku();
-      // const status = checkPromotionStatus(RETRIES, TIMEOUT);
-      // core.setOutput("promote-status", status);
+      const status = checkPromotionStatus(RETRIES, TIMEOUT);
+      core.setOutput("promote-status", status);
     }
     /// end of catch
   } catch (error) {

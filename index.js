@@ -26,8 +26,8 @@ async function run() {
       githubRelease();
     } else if (actionType === "promote") {
       promoteOnHeroku();
-      const status = checkPromotionStatus(RETRIES, TIMEOUT);
-      core.setOutput("promote-status", status);
+      // const status = checkPromotionStatus(RETRIES, TIMEOUT);
+      // core.setOutput("promote-status", status);
     }
     /// end of catch
   } catch (error) {
@@ -88,6 +88,7 @@ function checkPromotionStatus(retries, timeout) {
   const options = {
     headers: {
       Accept: "application/vnd.heroku+json; version=3",
+      "Content-Type": "application/json",
       Authorization: `Bearer ${HEROKU_API_KEY}`,
     },
   };

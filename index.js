@@ -160,6 +160,7 @@ function githubRelease() {
         ],
       };
 
+      console.log(block);
       core.setOutput("slack-message", JSON.stringify(block));
     })
     .catch((error) => {

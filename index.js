@@ -11,7 +11,7 @@ const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
 const RETRIES = 5;
 const TIMEOUT = 10000;
 var lastReleaseClubhouseNumbers = [];
-
+var pipelinePromotionID = "initial";
 let collection = {
   Feature: [],
   Bugfix: [],
@@ -24,8 +24,9 @@ function run() {
     if (actionType === "release") {
       githubRelease();
     } else if (actionType === "promote") {
-      const promotionID = promoteOnHeroku();
-      const status = checkPromotionStatus(promotionID, RETRIES, TIMEOUT);
+      promoteOnHeroku();
+      setTimeout(10000);
+      const status = checkPromotionStatus(RETRIES, TIMEOUT);
       core.setOutput("promote-status", status);
     }
     /// end of catch
@@ -68,7 +69,6 @@ function promoteOnHeroku() {
     ],
   };
 
-  var pipelinePromotionID = "initial";
   //create pipeline promotion and retrieve the pipeline promotion ID
   axios
     .post(herokuPromoteURL, data, options)
@@ -81,14 +81,13 @@ function promoteOnHeroku() {
     .catch((error) => {
       console.log(error);
     });
-  return pipelinePromotionID;
 }
 
-function checkPromotionStatus(promotionID, retries, timeout) {
-  console.log("promotion id?: " + promotionID);
+function checkPromotionStatus(retries, timeout) {
+  console.log("promotion id?: " + pipelinePromotionID);
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
   var status = "";
-  const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${promotionID}`;
+  const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;
   const options = {
     headers: {
       Accept: "application/vnd.heroku+json; version=3",

@@ -11,7 +11,7 @@ const GITHUB_API_BASE_URL = "https://api.github.com";
 const newLine = "\r\n";
 const RETRIES = 5;
 const TIME_OUT = 10000;
-var lastReleaseClubhouseNumbers = [];
+
 var pipelinePromotionID = "initial";
 
 async function run() {
@@ -133,6 +133,7 @@ function githubRelease() {
 
   // get last release tag to determine the next release tag
   const getLatestReleaseUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/releases/latest`;
+  var lastReleaseClubhouseNumbers = [];
   axios
     .get(getLatestReleaseUrl, options)
     .then((response) => {
@@ -172,6 +173,10 @@ function githubRelease() {
         const PRClubhouseNumber = extractClubhouseStoryNumber(
           data[i].title,
           data[i].body
+        );
+        console.log(
+          "Clubhouse Numbers included in the last Release: " +
+            lastReleaseClubhouseNumbers
         );
         if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
           break;

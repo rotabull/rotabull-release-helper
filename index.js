@@ -141,7 +141,10 @@ function githubRelease() {
     .get(getLatestReleaseUrl, options)
     .then((response) => {
       console.log("Release Latest Response:" + JSON.stringify(response.data));
-      const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
+      const nextReleaseTag = getNextReleaseTag(
+        response.data.tag_name,
+        moment().format("YYYY.MM.DD")
+      );
 
       lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
         response.data.body
@@ -219,13 +222,17 @@ function composeReleaseBody(collection) {
   var totalPRCount = 0;
   for (const [category, titlesCollection] of Object.entries(collection)) {
     totalPRCount += titlesCollection.length;
+
     if (titlesCollection.length > 0) {
-      notes = newLine + labels[category] + newLine;
+      const subheader = newLine + labels[category] + newLine;
+      notes += subheader;
       titlesCollection.forEach((element) => {
         notes += newLine + "* " + element + newLine;
+        console.log("notes" + notes);
       });
     }
   }
+  console.log("PR Count" + totalPRCount);
 
   if (totalPRCount > 0) return header + notes;
   return notes;
@@ -292,20 +299,32 @@ function extractTitleIgnoringClubhouseNumber(title) {
   const after = title.replace(rx, replaceWith);
   return after.trim();
 }
-function getNextReleaseTag(lastReleaseTag) {
+function getNextReleaseTag(lastReleaseTag, todayDate) {
   console.log("Last release tag is " + lastReleaseTag);
 
-  const date = moment().format("YYYY.MM.DD");
-  if (lastReleaseTag === `v${date}`) {
+  // const date = moment().format("YYYY.MM.DD");
+  if (lastReleaseTag === `v${todayDate}`) {
     return `${lastReleaseTag}.1`;
-  } else if (lastReleaseTag.includes(date)) {
+  } else if (lastReleaseTag.includes(todayDate)) {
     const splitted = lastReleaseTag.split(".");
     const newVersionNum = parseInt(splitted[splitted.length - 1]) + 1;
-    return `v${date}.${newVersionNum}`;
+    return `v${todayDate}.${newVersionNum}`;
   } else {
-    return `v${date}`;
+    return `v${todayDate}`;
   }
 }
+
+module.exports = {
+  githubRelease: githubRelease,
+  extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
+  extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,
+  extractClubhouseNumberFromPRBody: extractClubhouseNumberFromPRBody,
+  extractCategory: extractCategory,
+  extractTitleIgnoringClubhouseNumber: extractTitleIgnoringClubhouseNumber,
+  composeReleaseBody: composeReleaseBody,
+  getNextReleaseTag: getNextReleaseTag,
+  promoteOnHeroku: promoteOnHeroku,
+};
 // =======================
 function getReleaseResponse() {
   const res = {

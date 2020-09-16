@@ -137,7 +137,7 @@ function githubRelease() {
   axios
     .get(getLatestReleaseUrl, options)
     .then((response) => {
-      console.log("Release Latest Response:" + response);
+      console.log("Release Latest Response:" + response.data);
       const nextReleaseTag = getNextReleaseTag(response.data.tag_name);
 
       lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(

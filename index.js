@@ -106,14 +106,16 @@ function checkPromotionStatus(retries, timeout) {
         status === "succeeded" ||
         status === "completed" ||
         status === "failed"
-      )
+      ) {
         core.setOutput("promote-status", status);
-      if (retries > 0) {
-        setTimeout(() => {
-          return checkPromotionStatus(retries - 1);
-        }, timeout);
       } else {
-        core.setOutput("promote-status", "RETRY MAXIMUM REACHED");
+        if (retries > 0) {
+          setTimeout(() => {
+            return checkPromotionStatus(retries - 1);
+          }, timeout);
+        } else {
+          core.setOutput("promote-status", "RETRY MAXIMUM REACHED");
+        }
       }
     })
     .catch((error) => {

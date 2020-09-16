@@ -140,7 +140,7 @@ function getLastRelease() {
   // get last release tag to determine the next release tag
   const getLatestReleaseUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/releases/latest`;
 
-  axios
+  return axios
     .get(getLatestReleaseUrl, options)
     .then((response) => {
       console.log("Release Latest Response:" + JSON.stringify(response.data));
@@ -153,6 +153,7 @@ function getLastRelease() {
         response.data.body
       );
 
+      console.log(lastReleaseClubhouseNumbers);
       core.setOutput("release-tag", nextReleaseTag);
       core.setOutput("release-title", `Release ${nextReleaseTag}`);
       return lastReleaseClubhouseNumbers;

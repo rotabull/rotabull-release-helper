@@ -88,7 +88,7 @@ function promoteOnHeroku() {
 function checkPromotionStatus(retries, timeout) {
   console.log("promotion id?: " + pipelinePromotionID);
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
-  var status = "";
+
   const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;
   const options = {
     headers: {
@@ -100,8 +100,9 @@ function checkPromotionStatus(retries, timeout) {
   axios
     .get(checkPromotionStatusURL, options)
     .then((response) => {
-      console.log("checking promotion status " + retries + ":" + response);
-      status = response.data.status;
+      console.log("checking promotion status " + retries + ":");
+      console.log(response.data);
+      const status = response.data.status;
       if (
         status === "succeeded" ||
         status === "completed" ||
@@ -119,8 +120,6 @@ function checkPromotionStatus(retries, timeout) {
     .catch((error) => {
       console.log(error);
     });
-
-  return status;
 }
 function githubRelease() {
   const githubToken = core.getInput("github-token");

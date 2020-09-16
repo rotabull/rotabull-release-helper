@@ -6,6 +6,8 @@ const moment = require("moment");
 const REPO = "rotabull";
 const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
+const HEROKU_API_BASE_URL = "https://api.heroku.com";
+const GITHUB_API_BASE_URL = "https://api.github.com";
 const newLine = "\r\n";
 const RETRIES = 5;
 const TIME_OUT = 10000;
@@ -38,7 +40,7 @@ function promoteOnHeroku() {
   const TARGET_APP_ID = core.getInput("target-app-id");
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
-  const herokuPromoteURL = "https://api.heroku.com/pipeline-promotions";
+  const herokuPromoteURL = `${HEROKU_API_BASE_URL}/pipeline-promotions`;
   const options = {
     headers: {
       Accept: "application/vnd.heroku+json; version=3",
@@ -84,7 +86,7 @@ function promoteOnHeroku() {
 function checkPromotionStatus(retries, timeout) {
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
-  const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;
+  const checkPromotionStatusURL = `${HEROKU_API_BASE_URL}/pipeline-promotions/${pipelinePromotionID}`;
   const options = {
     headers: {
       Accept: "application/vnd.heroku+json; version=3",
@@ -130,7 +132,7 @@ function githubRelease() {
   };
 
   // get last release tag to determine the next release tag
-  const getLatestReleaseUrl = `https://api.github.com/repos/${OWNER}/${REPO}/releases/latest`;
+  const getLatestReleaseUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/releases/latest`;
   axios
     .get(getLatestReleaseUrl, options)
     .then((response) => {
@@ -153,12 +155,11 @@ function githubRelease() {
   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
   // If one latest has been released, then all the ones older than that one must already been released
   var collection = {
-    Feature: ["test"],
+    Feature: [],
     Bugfix: [],
     Chore: [],
   };
-  const getClosedPRsURL =
-    "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed";
+  const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
   axios
     .get(getClosedPRsURL, options)
     .then((response) => {

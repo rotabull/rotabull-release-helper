@@ -153,7 +153,7 @@ function githubRelease() {
   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
   // If one latest has been released, then all the ones older than that one must already been released
   var collection = {
-    Feature: [],
+    Feature: ["test"],
     Bugfix: [],
     Chore: [],
   };

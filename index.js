@@ -1,13 +1,13 @@
 const core = require("@actions/core");
-const github = require("@actions/github");
+//const github = require("@actions/github");
 const axios = require("axios").default;
 const moment = require("moment");
 const { execSync } = require("child_process");
 
 const REPO = "rotabull";
 const OWNER = "rotabull";
+const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const newLine = "\r\n";
-const clubhouseBaseURL = "https://app.clubhouse.io/rotabull/story/";
 const RETRIES = 5;
 const TIMEOUT = 10000;
 var lastReleaseClubhouseNumbers = [];
@@ -20,16 +20,16 @@ let collection = {
 
 function run() {
   let actionType = core.getInput("action-type");
-  let status = "";
+
   try {
     if (actionType === "release") {
       githubRelease();
     } else if (actionType === "promote") {
       promoteOnHeroku();
       setTimeout(() => {
-        status = checkPromotionStatus(RETRIES, TIMEOUT);
+        const status = checkPromotionStatus(RETRIES, TIMEOUT);
+        core.setOutput("promote-status", status);
       }, TIMEOUT);
-      core.setOutput("promote-status", status);
     }
     /// end of catch
   } catch (error) {
@@ -226,7 +226,7 @@ function composeReleaseBody(collection) {
 
 function saveToCollection(category, title, PRClubhouseNumber) {
   console.log("category is:" + category);
-  const content = `${title} [ch${PRClubhouseNumber}](${clubhouseBaseURL}${PRClubhouseNumber})`;
+  const content = `${title} [ch${PRClubhouseNumber}](${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
   titles[titles.length] = content;
 }

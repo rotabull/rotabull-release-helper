@@ -23,9 +23,6 @@ async function run() {
         console.log("Promotion ID is set to " + id);
         checkPromotionStatus(id, RETRIES, TIME_OUT);
       });
-      // setTimeout(() => {
-      //   checkPromotionStatus(pipelinePromotionID, RETRIES, TIME_OUT);
-      // }, TIME_OUT);
     }
     /// end of catch
   } catch (error) {

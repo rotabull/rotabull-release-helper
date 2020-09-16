@@ -1,5 +1,5 @@
-name: "Hello World"
-description: "Greet someone and record the time"
+name: "Automated Release"
+description: "Promotes Staging to Production, Creates GitHub Release"
 inputs:
   github-token:
     description: "github token"
@@ -25,8 +25,6 @@ outputs:
     description: "Release summary notes"
   promote-status:
     description: "Heroku Promote Status"
-  slack-message:
-    description: "Slack Block Kit Payload"
 runs:
   using: "node12"
   main: "index.js"

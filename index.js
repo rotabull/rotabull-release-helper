@@ -16,7 +16,10 @@ async function run() {
 
   try {
     if (actionType === "release") {
-      createGithubRelease();
+      getLastRelease().then((clubhouseIDs) => {
+        console.log("Last Clubhouse IDs: " + clubhouseIDs);
+        createGithubRelease(clubhouseIDs);
+      });
     } else if (actionType === "promote") {
       promoteOnHeroku().then((id) => {
         console.log("Promotion ID is set to " + id);
@@ -158,7 +161,7 @@ function getLastRelease() {
       console.log(error);
     });
 }
-function createGithubRelease() {
+function createGithubRelease(lastReleaseClubhouseNumbers) {
   // Collect PRs (clubhouse story ID) being merged from last release based off last release summary
   // sort based on merged timestamp
   // If we can't find the PR based off the title, it is part of our next new release
@@ -170,51 +173,47 @@ function createGithubRelease() {
     Chore: [],
   };
 
-  getLastRelease().then((lastReleaseClubhouseNumbers) => {
-    console.log(
-      "Last Release Clubhouse Numbers are:" + lastReleaseClubhouseNumbers
-    );
-    const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
-    axios
-      .get(getClosedPRsURL, options)
-      .then((response) => {
-        var data = response.data;
-        data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+  console.log("Last Release Clubhouse Numbers: " + lastReleaseClubhouseNumbers);
+  const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
+  axios
+    .get(getClosedPRsURL, options)
+    .then((response) => {
+      var data = response.data;
+      data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
 
-        for (var i = 0, n = data.length; i < n; ++i) {
-          if (data[i].merged_at === null) continue;
-          const PRClubhouseNumber = extractClubhouseStoryNumber(
-            data[i].title,
-            data[i].body
-          );
-          console.log(
-            "Clubhouse Numbers included in the last Release: " +
-              lastReleaseClubhouseNumbers
-          );
-          if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
-            break;
-          }
-
-          const branchName = data[i].head.ref;
-          const category = extractCategory(branchName);
-          const title = extractTitleIgnoringClubhouseNumber(data[i].title);
-
-          collection = saveToCollection(
-            collection,
-            category,
-            title,
-            PRClubhouseNumber
-          );
+      for (var i = 0, n = data.length; i < n; ++i) {
+        if (data[i].merged_at === null) continue;
+        const PRClubhouseNumber = extractClubhouseStoryNumber(
+          data[i].title,
+          data[i].body
+        );
+        console.log(
+          "Clubhouse Numbers included in the last Release: " +
+            lastReleaseClubhouseNumbers
+        );
+        if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
+          break;
         }
 
-        const releaseBody = composeReleaseBody(collection);
-        console.log("Release body will be: " + releaseBody);
-        core.setOutput("release-body", releaseBody);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  });
+        const branchName = data[i].head.ref;
+        const category = extractCategory(branchName);
+        const title = extractTitleIgnoringClubhouseNumber(data[i].title);
+
+        collection = saveToCollection(
+          collection,
+          category,
+          title,
+          PRClubhouseNumber
+        );
+      }
+
+      const releaseBody = composeReleaseBody(collection);
+      console.log("Release body will be: " + releaseBody);
+      core.setOutput("release-body", releaseBody);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 }
 
 function composeReleaseBody(collection) {

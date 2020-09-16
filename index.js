@@ -2,7 +2,6 @@ const core = require("@actions/core");
 //const github = require("@actions/github");
 const axios = require("axios").default;
 const moment = require("moment");
-const { execSync } = require("child_process");
 
 const REPO = "rotabull";
 const OWNER = "rotabull";
@@ -12,13 +11,8 @@ const RETRIES = 5;
 const TIME_OUT = 10000;
 var lastReleaseClubhouseNumbers = [];
 var pipelinePromotionID = "initial";
-let collection = {
-  Feature: [],
-  Bugfix: [],
-  Chore: [],
-};
 
-function run() {
+async function run() {
   let actionType = core.getInput("action-type");
 
   try {
@@ -74,10 +68,13 @@ function promoteOnHeroku() {
   axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
-      console.log("promote to pipeline response: ");
+      console.log("Promote to pipeline response: ");
       console.log(response.data);
       pipelinePromotionID = response.data.id;
-      console.log("pipeline promotion ID" + pipelinePromotionID);
+      console.log(
+        "Pipeline promotion is created. Pipeline Promotion ID:" +
+          pipelinePromotionID
+      );
     })
     .catch((error) => {
       console.log(error);
@@ -85,7 +82,6 @@ function promoteOnHeroku() {
 }
 
 function checkPromotionStatus(retries, timeout) {
-  console.log("promotion id?: " + pipelinePromotionID);
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
   const checkPromotionStatusURL = `https://api.heroku.com/pipeline-promotions/${pipelinePromotionID}`;
@@ -156,7 +152,11 @@ function githubRelease() {
   // If we can't find the PR based off the title, it is part of our next new release
   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
   // If one latest has been released, then all the ones older than that one must already been released
-
+  var collection = {
+    Feature: [],
+    Bugfix: [],
+    Chore: [],
+  };
   const getClosedPRsURL =
     "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed";
   axios
@@ -180,7 +180,12 @@ function githubRelease() {
         const category = extractCategory(branchName);
         const title = extractTitleIgnoringClubhouseNumber(data[i].title);
 
-        saveToCollection(category, title, PRClubhouseNumber);
+        collection = saveToCollection(
+          collection,
+          category,
+          title,
+          PRClubhouseNumber
+        );
       }
 
       const releaseBody = composeReleaseBody(collection);
@@ -225,11 +230,12 @@ function composeReleaseBody(collection) {
   return header + featureNotes + bugfixNotes + choreNotes;
 }
 
-function saveToCollection(category, title, PRClubhouseNumber) {
+function saveToCollection(collection, category, title, PRClubhouseNumber) {
   console.log("category is:" + category);
   const content = `${title} [ch${PRClubhouseNumber}](${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
   titles[titles.length] = content;
+  return collection;
 }
 
 function extractClubhouseStoryNumber(title, body) {

@@ -205,36 +205,27 @@ function githubRelease() {
 }
 
 function composeReleaseBody(collection) {
+  const labels = {
+    Feature: "### Features -- ⭐️",
+    Bugfix: "### Bugfixes -- 🐞",
+    Chore: "### Chores -- ⚙",
+  };
   const header = "## What's Changed" + newLine;
 
-  const featureCollection = collection["Feature"];
-  var featureNotes = "";
-  if (featureCollection.length > 0) {
-    featureNotes = newLine + "###  Features -- ⭐️" + newLine;
-    featureCollection.forEach((element) => {
-      featureNotes += newLine + "* " + element + newLine;
-    });
+  var notes = "";
+  var totalPRCount = 0;
+  for (const [category, titlesCollection] of Object.entries(collection)) {
+    totalPRCount += titlesCollection.length;
+    if (titlesCollection.length > 0) {
+      notes = newLine + labels[category] + newLine;
+      titlesCollection.forEach((element) => {
+        notes += newLine + "* " + element + newLine;
+      });
+    }
   }
 
-  const bugfixCollection = collection["Bugfix"];
-  var bugfixNotes = "";
-  if (bugfixCollection.length > 0) {
-    bugfixNotes = newLine + "### Bugfixes -- 🐞" + newLine;
-    bugfixCollection.forEach((element) => {
-      bugfixNotes += newLine + "* " + element + newLine;
-    });
-  }
-
-  const choreCollection = collection["Chore"];
-  var choreNotes = "";
-  if (choreCollection.length > 0) {
-    choreNotes = newLine + "### Chores -- ⚙️" + newLine;
-    choreCollection.forEach((element) => {
-      choreNotes += newLine + "* " + element + newLine;
-    });
-  }
-
-  return header + featureNotes + bugfixNotes + choreNotes;
+  if (totalPRCount > 0) return header + notes;
+  return notes;
 }
 
 function saveToCollection(collection, category, title, PRClubhouseNumber) {

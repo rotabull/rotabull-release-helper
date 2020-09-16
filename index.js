@@ -9,7 +9,7 @@ const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const newLine = "\r\n";
 const RETRIES = 5;
-const TIMEOUT = 10000;
+const TIME_OUT = 10000;
 var lastReleaseClubhouseNumbers = [];
 var pipelinePromotionID = "initial";
 let collection = {
@@ -27,9 +27,8 @@ function run() {
     } else if (actionType === "promote") {
       promoteOnHeroku();
       setTimeout(() => {
-        const status = checkPromotionStatus(RETRIES, TIMEOUT);
-        core.setOutput("promote-status", status);
-      }, TIMEOUT);
+        checkPromotionStatus(RETRIES, TIME_OUT);
+      }, TIME_OUT);
     }
     /// end of catch
   } catch (error) {
@@ -108,13 +107,13 @@ function checkPromotionStatus(retries, timeout) {
         status === "completed" ||
         status === "failed"
       )
-        return status;
+        core.setOutput("promote-status", status);
       if (retries > 0) {
         setTimeout(() => {
           return checkPromotionStatus(retries - 1);
         }, timeout);
       } else {
-        return "RETRY MAXIMUM REACHED";
+        core.setOutput("promote-status", "RETRY MAXIMUM REACHED");
       }
     })
     .catch((error) => {

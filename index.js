@@ -139,7 +139,7 @@ function getLastRelease() {
 
   // get last release tag to determine the next release tag
   const getLatestReleaseUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/releases/latest`;
-  var lastReleaseClubhouseNumbers = [];
+
   axios
     .get(getLatestReleaseUrl, options)
     .then((response) => {
@@ -149,7 +149,7 @@ function getLastRelease() {
         moment().format("YYYY.MM.DD")
       );
 
-      lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
+      const lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
         response.data.body
       );
 

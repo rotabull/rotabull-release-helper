@@ -12,8 +12,6 @@ const newLine = "\r\n";
 const RETRIES = 5;
 const TIME_OUT = 10000;
 
-var pipelinePromotionID = "initial";
-
 async function run() {
   let actionType = core.getInput("action-type");
 
@@ -21,10 +19,13 @@ async function run() {
     if (actionType === "release") {
       githubRelease();
     } else if (actionType === "promote") {
-      promoteOnHeroku();
-      setTimeout(() => {
-        checkPromotionStatus(RETRIES, TIME_OUT);
-      }, TIME_OUT);
+      promoteOnHeroku().then((id) => {
+        console.log("Promotion ID is set to " + id);
+        checkPromotionStatus(id, RETRIES, TIME_OUT);
+      });
+      // setTimeout(() => {
+      //   checkPromotionStatus(pipelinePromotionID, RETRIES, TIME_OUT);
+      // }, TIME_OUT);
     }
     /// end of catch
   } catch (error) {
@@ -39,7 +40,7 @@ function promoteOnHeroku() {
   const SOURCE_APP_ID = core.getInput("source-app-id");
   const TARGET_APP_ID = core.getInput("target-app-id");
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
-
+  var pipelinePromotionID = "initial";
   const herokuPromoteURL = `${HEROKU_API_BASE_URL}/pipeline-promotions`;
   const options = {
     headers: {
@@ -67,7 +68,7 @@ function promoteOnHeroku() {
   };
 
   //create pipeline promotion and retrieve the pipeline promotion ID
-  axios
+  return axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
       console.log("Promote to pipeline response: ");
@@ -77,13 +78,14 @@ function promoteOnHeroku() {
         "Pipeline promotion is created. Pipeline Promotion ID:" +
           pipelinePromotionID
       );
+      return pipelinePromotionID;
     })
     .catch((error) => {
       console.log(error);
     });
 }
 
-function checkPromotionStatus(retries, timeout) {
+function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
   const checkPromotionStatusURL = `${HEROKU_API_BASE_URL}/pipeline-promotions/${pipelinePromotionID}`;

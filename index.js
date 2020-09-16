@@ -111,7 +111,11 @@ function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
       } else {
         if (retries > 0) {
           setTimeout(() => {
-            return checkPromotionStatus(retries - 1);
+            return checkPromotionStatus(
+              pipelinePromotionID,
+              retries - 1,
+              timeout
+            );
           }, timeout);
         } else {
           core.setOutput("promote-status", "RETRY MAXIMUM REACHED");

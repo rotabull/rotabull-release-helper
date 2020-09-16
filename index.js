@@ -126,7 +126,7 @@ function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
     });
 }
 
-function getLastRelease() {
+function getGithubAPIHeader() {
   const githubToken = core.getInput("github-token");
 
   const options = {
@@ -136,6 +136,10 @@ function getLastRelease() {
       Authorization: `token ${githubToken}`,
     },
   };
+  return options;
+}
+function getLastRelease() {
+  const options = getGithubAPIHeader();
 
   // get last release tag to determine the next release tag
   const getLatestReleaseUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/releases/latest`;
@@ -173,7 +177,7 @@ function createGithubRelease(lastReleaseClubhouseNumbers) {
     Bugfix: [],
     Chore: [],
   };
-
+  const options = getGithubAPIHeader();
   console.log("Last Release Clubhouse Numbers: " + lastReleaseClubhouseNumbers);
   const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
   axios

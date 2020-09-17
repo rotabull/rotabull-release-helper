@@ -1,5 +1,5 @@
 name: "Automated Release"
-description: "Promotes Staging to Production, Creates GitHub Release"
+description: "Promotes Staging to Production or/and Creates GitHub Release"
 inputs:
   github-token:
     description: "github token"
@@ -12,10 +12,13 @@ inputs:
     required: true
   pipeline-id:
     description: "Heroku Pipline ID"
+    required: true
   source-app-id:
     description: "Heroku Source APP ID"
+    required: true
   target-app-id:
     description: "Heroku Target APP ID"
+    required: true
 outputs:
   release-title:
     description: "Release title"

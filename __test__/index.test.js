@@ -31,6 +31,7 @@ describe("index.js", () => {
       outputs[name] = value;
     });
   });
+
   describe("promoteOnHeroku", () => {
     test("calls the heroku pipeline promotion api and returns the promotion id", () => {
       const params = {
@@ -79,6 +80,7 @@ describe("index.js", () => {
       });
     });
   });
+
   describe("checkPromotionStatus", () => {
     test("calls the heroku check promotion status api", () => {
       const params = {
@@ -321,8 +323,6 @@ describe("index.js", () => {
     });
   });
 
-  // v2020.09.15
-  // v2020.09.16.1
   describe("getNextReleaseTag", () => {
     test("when last release is the same date as today, returns with a version number", () => {
       const todayDate = moment().format("YYYY.MM.DD");

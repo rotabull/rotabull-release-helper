@@ -8,8 +8,8 @@ const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
 const newLine = "\r\n";
-const RETRIES = 5;
-const TIME_OUT = 10000;
+const RETRIES = 10;
+const TIME_OUT = 20000;
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -66,7 +66,6 @@ function promoteOnHeroku() {
     ],
   };
 
-  //create pipeline promotion and retrieve the pipeline promotion ID
   return axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {

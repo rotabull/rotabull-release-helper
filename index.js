@@ -326,6 +326,7 @@ function getNextReleaseTag(lastReleaseTag, todayDate) {
 
 module.exports = {
   checkPromotionStatus: checkPromotionStatus,
+  createGithubRelease: createGithubRelease,
   getLastRelease: getLastRelease,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,

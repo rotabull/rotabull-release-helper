@@ -2,6 +2,7 @@ const moment = require("moment");
 const axios = require("axios");
 const core = require("@actions/core");
 const main = require("../index.js");
+
 //example of mocking @actions/core and @actions/github
 //https://github.com/actions/checkout/blob/master/__test__/input-helper.test.ts
 jest.mock("axios");
@@ -15,6 +16,9 @@ var inputs = {
 
 var outputs = {
   "promote-status": undefined,
+  "release-body": undefined,
+  "release-title": undefined,
+  "release-tag": undefined,
 };
 
 describe("index.js", () => {
@@ -101,6 +105,7 @@ describe("index.js", () => {
       });
     });
   });
+
   describe("getLastRelease", () => {
     test("calls get last release github api and returns valid clubhouse numbers array", () => {
       const options = {
@@ -131,8 +136,74 @@ describe("index.js", () => {
   });
 
   describe("createGithubRelease", () => {
-    test("calls closed PRs", () => {});
+    test("calls get closed PRs Github API and sets release body", () => {
+      const releasedClubhouseNumber = ["3331"];
+      const options = {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+          Authorization: `token some-random-token`,
+        },
+      };
+      const response = {
+        data: [
+          {
+            title: "Demo/context 2",
+            merged_at: null,
+            body: "blablah",
+            head: {
+              ref: "demo/context-2",
+            },
+          },
+          {
+            title:
+              "[ch3681] Properly display/download attachments from an email quote",
+            merged_at: "2020-09-11T23:37:25Z",
+            body: "blablah2",
+            head: {
+              ref: "bug/ch3681",
+            },
+          },
+          {
+            title:
+              "Change Quickbooks invoice worker to run every 10 minutes [ch3644]",
+            merged_at: "2020-09-10T17:52:50Z",
+            body: "blablah3",
+            head: {
+              ref: "bugfix/qbo-sync-schedule",
+            },
+          },
+          {
+            title: "Clean up notification emails [ch3331]",
+            merged_at: "2020-09-10T17:49:05Z",
+            body: "blablah4",
+            head: {
+              ref: "feature/ch3331",
+            },
+          },
+        ],
+      };
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      main.createGithubRelease(releasedClubhouseNumber);
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed",
+        options
+      );
+
+      const expectedReleaseNote =
+        "## What's Changed\r\n" +
+        "\r\n" +
+        "### Bugfixes -- 🐞\r\n" +
+        "\r\n" +
+        "* Properly display/download attachments from an email quote [ch3681](https://app.clubhouse.io/rotabull/story/3681)\r\n" +
+        "\r\n" +
+        "* Change Quickbooks invoice worker to run every 10 minutes [ch3644](https://app.clubhouse.io/rotabull/story/3644)\r\n";
+      setImmediate(() => {
+        expect(outputs["release-body"]).toBe(expectedReleaseNote);
+      });
+    });
   });
+
   describe("composeReleaseBody", () => {
     test("titles collection is empty returns an empty body", () => {
       const collection = {

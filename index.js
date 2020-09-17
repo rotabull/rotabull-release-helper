@@ -325,6 +325,7 @@ function getNextReleaseTag(lastReleaseTag, todayDate) {
 }
 
 module.exports = {
+  checkPromotionStatus: checkPromotionStatus,
   getLastRelease: getLastRelease,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,

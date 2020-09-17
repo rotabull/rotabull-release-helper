@@ -1,52 +1,140 @@
 const moment = require("moment");
 const axios = require("axios");
-
+const core = require("@actions/core");
 const main = require("../index.js");
+//example of mocking @actions/core and @actions/github
+//https://github.com/actions/checkout/blob/master/__test__/input-helper.test.ts
+jest.mock("axios");
+var inputs = {
+  "heroku-api-key": "heroku12346",
+  "pipeline-id": "pipelineid1234",
+  "source-app-id": "staging1234",
+  "target-app-id": "production12345",
+  "github-token": "some-random-token",
+};
+
+var outputs = {
+  "promote-status": undefined,
+};
 
 describe("index.js", () => {
+  beforeAll(() => {
+    jest.spyOn(core, "getInput").mockImplementation((name) => {
+      return inputs[name];
+    });
+
+    jest.spyOn(core, "setOutput").mockImplementation((name, value) => {
+      outputs[name] = value;
+    });
+  });
   describe("promoteOnHeroku", () => {
-    test("it should filter ", () => {
-      const response = {};
-      const options = {};
-      jest.mock("axios");
-      axios.post = jest.fn();
-      jest.fn().mockImplementationOnce(() => Promise.resolve(response));
-      main.promoteOnHeroku();
+    test("calls the heroku pipeline promotion api and returns the promotion id", () => {
+      const params = {
+        headers: {
+          Accept: "application/vnd.heroku+json; version=3",
+          Authorization: "Bearer heroku12346",
+          "Content-Type": "application/json",
+        },
+      };
+      const response = {
+        data: {
+          id: "some-promotion-id-returned-by-api",
+        },
+      };
+
+      const expectedPayload = {
+        pipeline: {
+          id: inputs["pipeline-id"],
+        },
+        source: {
+          app: {
+            id: inputs["source-app-id"],
+          },
+        },
+        targets: [
+          {
+            app: {
+              id: inputs["target-app-id"],
+            },
+          },
+        ],
+      };
+      axios.post.mockImplementationOnce(() => Promise.resolve(response));
+
+      const herokuPromotionID = main.promoteOnHeroku();
+
       expect(axios.post).toHaveBeenCalledWith(
         "https://api.heroku.com/pipeline-promotions",
-        options
+        expectedPayload,
+        params
       );
+
+      //https://jestjs.io/docs/en/asynchronous#promises
+      return herokuPromotionID.then((id) => {
+        expect(id).toBe("some-promotion-id-returned-by-api");
+      });
     });
   });
   describe("checkPromotionStatus", () => {
-    test("it should filter ", () => {});
-  });
-  describe("githubRelease", () => {
-    test("it should filter ", () => {
-      jest.mock("axios");
-      axios.get = jest.fn();
+    test("calls the heroku check promotion status api", () => {
+      const params = {
+        headers: {
+          Accept: "application/vnd.heroku+json; version=3",
+          Authorization: "Bearer heroku12346",
+          "Content-Type": "application/json",
+        },
+      };
       const response = {
         data: {
           status: "completed",
         },
-        id: "12345",
-        body: "123456Body",
-        tag_name: "tag_name",
       };
-      const options = {};
-      jest.fn().mockImplementationOnce(() => Promise.resolve(response));
 
-      expect(main.githubRelease()).resolves.toEqual(response);
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      main.checkPromotionStatus("1234", 1, 10000);
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.heroku.com/pipeline-promotions/1234",
+        params
+      );
+      setImmediate(() => {
+        expect(outputs["promote-status"]).toBe("completed");
+      });
+    });
+  });
+  describe("getLastRelease", () => {
+    test("calls get last release github api and returns valid clubhouse numbers array", () => {
+      const options = {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+          Authorization: `token some-random-token`,
+        },
+      };
 
+      const response = {
+        data: {
+          tag_name: "v1.13.1",
+          body: "blah blah blah [ch12345], [ch0909], [ch7789] blah blah blah",
+        },
+      };
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      const clubhouseNumbers = main.getLastRelease();
       expect(axios.get).toHaveBeenCalledWith(
         "https://api.github.com/repos/rotabull/rotabull/releases/latest",
         options
       );
+      return clubhouseNumbers.then((numbers) => {
+        expect(numbers.includes("0909")).toBe(true);
+        expect(numbers.includes("7789")).toBe(true);
+      });
     });
   });
 
+  describe("createGithubRelease", () => {
+    test("calls closed PRs", () => {});
+  });
   describe("composeReleaseBody", () => {
-    test("titles collection is empty", () => {
+    test("titles collection is empty returns an empty body", () => {
       const collection = {
         Feature: [],
         Bugfix: [],
@@ -55,14 +143,14 @@ describe("index.js", () => {
       const releaseBody = main.composeReleaseBody(collection);
       expect(releaseBody).toBe("");
     });
-    test("titles collection contains at least 1 element ", () => {
+    test("titles collection contains at least 1 element returns an non-empty body", () => {
       const collection = {
         Feature: ["Story 1 [ch2222](www.google.com)"],
         Bugfix: ["Story 3 [ch1234](www.google3.com)"],
         Chore: ["Story 2 [ch3333](www.google2.com)"],
       };
       const releaseBody = main.composeReleaseBody(collection);
-      console.log(releaseBody);
+
       expect(releaseBody).toBe(
         "## What's Changed\r\n\r\n### Features -- ⭐️\r\n" +
           "\r\n* Story 1 [ch2222](www.google.com)\r\n" +
@@ -140,7 +228,7 @@ describe("index.js", () => {
   });
 
   describe("extractAllClubhouseNumbersFromLastRelease", () => {
-    test("titles collection is empty", () => {
+    test("last release body containing multiple clubhouse links returns an array", () => {
       const body =
         "## What’s Changed\r\n\r\n###  Chores -- ⚙️\r\n\r\n* Appcues installation improvements [ch3617]\r\n\r\n### Bugfixes -- 🐞\r\n\r\n* Price suggestion popover on repair form [ch3481](https://app.clubhouse.io/rotabull/story/3481)\r\n";
       const clubhouseNumbers = main.extractAllClubhouseNumbersFromLastRelease(
@@ -150,7 +238,6 @@ describe("index.js", () => {
       expect(clubhouseNumbers.includes("3617")).toBe(true);
       expect(clubhouseNumbers.includes("3481")).toBe(true);
     });
-    test("titles collection contains at least 1 element ", () => {});
   });
 
   describe("extractTitleIgnoringClubhouseNumber", () => {
@@ -166,26 +253,26 @@ describe("index.js", () => {
   // v2020.09.15
   // v2020.09.16.1
   describe("getNextReleaseTag", () => {
-    test("when last release is the same date as today", () => {
+    test("when last release is the same date as today, returns with a version number", () => {
       const todayDate = moment().format("YYYY.MM.DD");
       const lastReleaseTag = `v${todayDate}`;
-
       const nextReleaseTag = main.getNextReleaseTag(lastReleaseTag, todayDate);
+
       expect(nextReleaseTag).toBe(`v${todayDate}.1`);
     });
 
-    test("when last release tag is not the same date as today", () => {
+    test("when last release tag is not the same date as today, returns today's date as version number", () => {
       const todayDate = moment().format("YYYY.MM.DD");
       const lastReleaseTag = `v1990.01.20`;
-
       const nextReleaseTag = main.getNextReleaseTag(lastReleaseTag, todayDate);
+
       expect(nextReleaseTag).toBe(`v${todayDate}`);
     });
-    test("release tag increases version number within the same date", () => {
+    test("release tag increases version number if a version number already exist", () => {
       const todayDate = moment().format("YYYY.MM.DD");
       const lastReleaseTag = `v${todayDate}.2`;
-
       const nextReleaseTag = main.getNextReleaseTag(lastReleaseTag, todayDate);
+
       expect(nextReleaseTag).toBe(`v${todayDate}.3`);
     });
   });

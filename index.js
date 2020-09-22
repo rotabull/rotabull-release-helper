@@ -290,7 +290,10 @@ function composeReleaseBody(collection) {
 
 function saveToCollection(collection, category, title, PRClubhouseNumber) {
   console.log("category is:" + category);
-  const content = `${title} [ch${PRClubhouseNumber}](${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
+  const clubhouseNumber = PRClubhouseNumber
+    ? `[ch${PRClubhouseNumber}]`
+    : "[#NotFound]";
+  const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
   titles[titles.length] = content;
   return collection;
@@ -368,6 +371,7 @@ module.exports = {
   createGithubRelease: createGithubRelease,
   getLastRelease: getLastRelease,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
+  extractClubhouseStoryNumber: extractClubhouseStoryNumber,
   extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,
   extractClubhouseNumberFromPRBody: extractClubhouseNumberFromPRBody,
   extractCategory: extractCategory,

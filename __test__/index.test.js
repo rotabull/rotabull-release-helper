@@ -235,6 +235,31 @@ describe("index.js", () => {
     });
   });
 
+  describe("extractClubhouseStoryNumber", () => {
+    test("returns clubhouse number when PR title contains clubhouse number", () => {
+      const title = "test [ch1234]";
+      const body = "I don't know";
+      const chNumber = main.extractClubhouseStoryNumber(title, body);
+
+      expect(chNumber).toEqual("1234");
+    });
+    test("returns clubhouse number from PR body if PR title does not contain clubhouse number", () => {
+      const title = "I don't have a number";
+      const body =
+        "https://app.clubhouse.io/rotabull/story/3860/release-actions-improvements-clean-up";
+      const chNumber = main.extractClubhouseStoryNumber(title, body);
+
+      expect(chNumber).toEqual("3860");
+    });
+    test("returns null if no clubhouse number found in both PR title and body", () => {
+      const title = "hey[ch";
+      const body = "https://app.clubhouse.io/rotabull/story/STORY_ID";
+      const chNumber = main.extractClubhouseStoryNumber(title, body);
+
+      expect(chNumber).toEqual(null);
+    });
+  });
+
   describe("extractClubhouseNumberFromPRBody", () => {
     test("extracts clubhouse number from body", () => {
       const mockBody =

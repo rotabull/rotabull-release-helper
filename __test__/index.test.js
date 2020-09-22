@@ -19,6 +19,7 @@ var outputs = {
   "release-body": undefined,
   "release-title": undefined,
   "release-tag": undefined,
+  "source-app-status": undefined,
 };
 
 describe("index.js", () => {
@@ -77,6 +78,44 @@ describe("index.js", () => {
       //https://jestjs.io/docs/en/asynchronous#promises
       return herokuPromotionID.then((id) => {
         expect(id).toBe("some-promotion-id-returned-by-api");
+      });
+    });
+  });
+
+  describe("getLastHerokuReleaseStatus", () => {
+    test("calls the heroku release promotion status api", () => {
+      const params = {
+        headers: {
+          Accept: "application/vnd.heroku+json; version=3",
+          Authorization: "Bearer heroku12346",
+          "Content-Type": "application/json",
+          Range: "version; order=desc",
+        },
+      };
+
+      const response1 = {
+        data: [
+          {
+            status: "succeeded",
+          },
+          {
+            status: "succeeded",
+          },
+        ],
+      };
+
+      axios.get.mockReturnValueOnce(Promise.resolve(response1));
+
+      main.getLastHerokuReleaseStatus(20, 60000);
+
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.heroku.com/apps/staging1234/releases",
+        params
+      );
+
+      setImmediate(() => {
+        expect(outputs["source-app-status"]).toBe("succeeded");
       });
     });
   });

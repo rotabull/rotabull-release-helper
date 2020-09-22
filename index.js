@@ -50,15 +50,24 @@ function getLastHerokuReleaseStatus(retries, timeout) {
       Range: "version; order=desc",
     },
   };
+  console.log("test");
   axios
     .get(herokuReleaseURL, options)
     .then((response) => {
       console.log(
         "checking last release status for source app " + retries + "..."
       );
-      console.log(response.data);
-      const status = response.data.status;
+      var status = null;
+
+      if (response.data === []) {
+        status = "succeeded";
+      } else {
+        console.log(response.data[0]);
+        status = response.data[0].status; //get the most recent
+      }
+
       if (status === "succeeded" || status === "failed") {
+        console.log("lalal");
         core.setOutput("source-app-status", status);
       } else {
         if (retries > 0) {
@@ -369,6 +378,7 @@ function getNextReleaseTag(lastReleaseTag, todayDate) {
 module.exports = {
   checkPromotionStatus: checkPromotionStatus,
   createGithubRelease: createGithubRelease,
+  getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastRelease: getLastRelease,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseStoryNumber: extractClubhouseStoryNumber,

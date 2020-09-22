@@ -10,6 +10,8 @@ const GITHUB_API_BASE_URL = "https://api.github.com";
 const newLine = "\r\n";
 const PROMOTE_RETRIES = 10;
 const PROMOTE_TIME_OUT = 20000;
+const CHECK_STATUS_RETRIES = 20;
+const CHECK_STATUS_TIME_OUT = 60000;
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -25,8 +27,9 @@ async function run() {
         console.log("Promotion ID is set to " + id);
         checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
       });
+    } else if (actionType === "check-status") {
+      getLastHerokuReleaseStatus(CHECK_STATUS_RETRIES, CHECK_STATUS_TIME_OUT);
     }
-    /// end of catch
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -34,6 +37,43 @@ async function run() {
 
 run();
 
+function getLastHerokuReleaseStatus(retries, timeout) {
+  const SOURCE_APP_ID = core.getInput("source-app-id");
+  const HEROKU_API_KEY = core.getInput("heroku-api-key");
+
+  const herokuReleaseURL = `${HEROKU_API_BASE_URL}/apps/${SOURCE_APP_ID}/releases`;
+  const options = {
+    headers: {
+      Accept: "application/vnd.heroku+json; version=3",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${HEROKU_API_KEY}`,
+      Range: "version; order=desc",
+    },
+  };
+  axios
+    .get(herokuReleaseURL, options)
+    .then((response) => {
+      console.log(
+        "checking last release status for source app " + retries + "..."
+      );
+      console.log(response.data);
+      const status = response.data.status;
+      if (status === "succeeded" || status === "failed") {
+        core.setOutput("source-app-status", status);
+      } else {
+        if (retries > 0) {
+          setTimeout(() => {
+            return getLastHerokuReleaseStatus(retries - 1, timeout);
+          }, timeout);
+        } else {
+          core.setOutput("source-app-status", "RETRY MAXIMUM REACHED");
+        }
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
 function promoteOnHeroku() {
   const PIPELINE_ID = core.getInput("pipeline-id");
   const SOURCE_APP_ID = core.getInput("source-app-id");

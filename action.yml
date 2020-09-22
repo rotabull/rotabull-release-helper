@@ -5,7 +5,7 @@ inputs:
     description: "github token"
     required: true
   action-type:
-    description: "promote or release"
+    description: "promote or release or check-status"
     required: true
   heroku-api-key:
     description: "Heroku API Key"
@@ -28,6 +28,8 @@ outputs:
     description: "Release summary notes"
   promote-status:
     description: "Heroku Promote Status"
+  source-app-status:
+    description: "Heroku Source Last Release Status"
 runs:
   using: "node12"
   main: "index.js"

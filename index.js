@@ -8,8 +8,8 @@ const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
 const newLine = "\r\n";
-const RETRIES = 10;
-const TIME_OUT = 20000;
+const PROMOTE_RETRIES = 10;
+const PROMOTE_TIME_OUT = 20000;
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -23,7 +23,7 @@ async function run() {
     } else if (actionType === "promote") {
       promoteOnHeroku().then((id) => {
         console.log("Promotion ID is set to " + id);
-        checkPromotionStatus(id, RETRIES, TIME_OUT);
+        checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
       });
     }
     /// end of catch

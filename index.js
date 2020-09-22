@@ -265,7 +265,7 @@ function extractClubhouseStoryNumber(title, body) {
 }
 
 function extractClubhouseNumberFromPRBody(body) {
-  var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9][0-9][0-9][0-9]/g;
+  var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9]+/g;
   var arr = body.match(rx);
   if (arr === null) return null;
   const data = arr[0].split("/");
@@ -273,11 +273,11 @@ function extractClubhouseNumberFromPRBody(body) {
 }
 
 function extractClubhouseNumberFromPRTitle(title) {
-  var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
+  var rx = /\[ch[0-9]+\]/g;
   var arr = title.match(rx);
   if (arr === null) return null;
 
-  var rx2 = /[0-9][0-9][0-9][0-9]/g;
+  var rx2 = /[0-9]+/g;
   return arr[0].match(rx2)[0];
 }
 
@@ -295,8 +295,8 @@ function extractCategory(branchName) {
 }
 
 function extractAllClubhouseNumbersFromLastRelease(body) {
-  var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
-  var rx2 = /[0-9][0-9][0-9][0-9]/g;
+  var rx = /\[ch[0-9]+\]/g;
+  var rx2 = /[0-9]+/g;
   var arr = body.match(rx);
   if (arr === null) return null;
   const newArray = arr.map((element) => element.match(rx2)[0]);
@@ -304,7 +304,7 @@ function extractAllClubhouseNumbersFromLastRelease(body) {
 }
 
 function extractTitleIgnoringClubhouseNumber(title) {
-  const rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
+  const rx = /\[ch[0-9]+\]/g;
   const replaceWith = "";
   const after = title.replace(rx, replaceWith);
   return after.trim();

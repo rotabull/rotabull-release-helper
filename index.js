@@ -292,7 +292,7 @@ function saveToCollection(collection, category, title, PRClubhouseNumber) {
   console.log("category is:" + category);
   const clubhouseNumber = PRClubhouseNumber
     ? `[ch${PRClubhouseNumber}]`
-    : "[#NotFound]";
+    : "[NoStoryID]";
   const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
   titles[titles.length] = content;
@@ -379,4 +379,5 @@ module.exports = {
   composeReleaseBody: composeReleaseBody,
   getNextReleaseTag: getNextReleaseTag,
   promoteOnHeroku: promoteOnHeroku,
+  saveToCollection: saveToCollection,
 };

@@ -234,7 +234,50 @@ describe("index.js", () => {
       );
     });
   });
+  describe("saveToCollection", () => {
+    test("if Clubhouse number is null", () => {
+      var collection = {
+        Feature: [],
+        Bugfix: [],
+        Chore: [],
+      };
 
+      const category = "Bugfix";
+      const clubhouseNumber = null;
+      const title = "Story 1";
+
+      const expectedCollection = {
+        Feature: [],
+        Bugfix: [
+          "Story 1 [NoStoryID](https://app.clubhouse.io/rotabull/story/null)",
+        ],
+        Chore: [],
+      };
+      main.saveToCollection(collection, category, title, clubhouseNumber);
+      expect(collection).toEqual(expectedCollection);
+    });
+
+    test("if Clubhouse number is not null", () => {
+      var collection = {
+        Feature: [],
+        Bugfix: [],
+        Chore: [],
+      };
+
+      const category = "Feature";
+      const clubhouseNumber = "1234";
+      const title = "Story 1";
+      const expectedCollection = {
+        Feature: [
+          "Story 1 [ch1234](https://app.clubhouse.io/rotabull/story/1234)",
+        ],
+        Bugfix: [],
+        Chore: [],
+      };
+      main.saveToCollection(collection, category, title, clubhouseNumber);
+      expect(collection).toEqual(expectedCollection);
+    });
+  });
   describe("extractClubhouseStoryNumber", () => {
     test("returns clubhouse number when PR title contains clubhouse number", () => {
       const title = "test [ch1234]";

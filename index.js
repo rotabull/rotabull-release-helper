@@ -224,7 +224,7 @@ function collectNewCommitSHAs(lastReleaseSHA) {
       const data = response.data;
       for (var i = 0, n = data.length; i < n; ++i) {
         if (data[i].sha === lastReleaseSHA) break;
-        collectedSHAs, push(data[i].sha);
+        collectedSHAs.push(data[i].sha);
       }
       console.log("CollectedSHAs are:" + collectedSHAs);
       return collectedSHAs;

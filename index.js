@@ -50,7 +50,7 @@ function getLastHerokuReleaseStatus(retries, timeout) {
       Range: "version; order=desc",
     },
   };
-  console.log("test");
+
   axios
     .get(herokuReleaseURL, options)
     .then((response) => {

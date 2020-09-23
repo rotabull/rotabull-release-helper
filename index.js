@@ -196,7 +196,7 @@ function getLastReleaseSHA() {
     .get(getGithubTagsUrl, options)
     .then((response) => {
       console.log("Last Github Release tags:" + JSON.stringify(response.data));
-      const lastTag = response.data === [] ? null : response.data[0];
+      const lastTag = response.data === [] ? null : response.data[0].name;
       const lastReleaseSHA =
         response.data === [] ? null : response.data[0].commit.sha;
       const nextReleaseTag = getNextReleaseTag(

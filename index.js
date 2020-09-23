@@ -237,19 +237,20 @@ function collectNewCommitSHAs(lastReleaseSHA) {
 }
 
 function createGithubRelease(collectedSHAs) {
+  let promises = [];
   var collection = {
     Feature: [],
     Bugfix: [],
     Chore: [],
   };
 
-  let promises = [];
-
+  console.log("collection oroginal " + collection);
   for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
     promises.push(getPRDetails(collectedSHAs[i]));
   }
-
+  console.log("collection after " + collection);
   Promise.all(promises).then(() => {
+    console.log("promises number:" + promises.length);
     const releaseBody = composeReleaseBody(collection);
     console.log("Release body will be: " + releaseBody);
     core.setOutput("release-body", releaseBody);

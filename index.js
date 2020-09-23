@@ -224,8 +224,9 @@ function collectNewCommitSHAs(lastReleaseSHA) {
       const data = response.data;
       for (var i = 0, n = data.length; i < n; ++i) {
         if (data[i].sha === lastReleaseSHA) break;
-        collectedSHAs[collectedSHAs.length - 1] = data[i].sha;
+        collectedSHAs, push(data[i].sha);
       }
+      console.log("CollectedSHAs are:" + collectedSHAs);
       return collectedSHAs;
     })
     .catch((error) => {
@@ -271,6 +272,9 @@ function getPRDetails(commitSHA, collection) {
         const title = extractTitleIgnoringClubhouseNumber(prTitle);
         const clubhouseNumber = extractClubhouseStoryNumber(prTitle, prBody);
 
+        console.log("category: " + category);
+        console.log("title:" + title);
+        console.log("clubhouseNumber: " + clubhouseNumber);
         saveToCollection(collection, category, title, clubhouseNumber);
       }
     })
@@ -368,6 +372,7 @@ function saveToCollection(collection, category, title, PRClubhouseNumber) {
   const titles = collection[category];
   // titles[titles.length] = content;
   titles.push(content);
+  console.log(collection);
   return collection;
 }
 

@@ -174,7 +174,6 @@ function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
     });
 }
 
-// application / vnd.github.v3 + json;
 function getGithubAPIHeader(acceptHeader) {
   const githubToken = core.getInput("github-token");
 
@@ -221,11 +220,9 @@ function collectNewCommitSHAs(lastReleaseSHA) {
   return axios
     .get(getGithubCommitsURl, options)
     .then((response) => {
-      console.log("Get Rotabull Commits: " + JSON.stringify(response.data));
       const data = response.data;
       for (var i = 0, n = data.length; i < n; ++i) {
         if (data[i].sha === lastReleaseSHA) break;
-        //collectedSHAs.push(data[i].sha);
         collectedSHAs[collectedSHAs.length] = data[i].sha;
       }
       console.log("CollectedSHAs are:" + collectedSHAs);
@@ -244,19 +241,16 @@ function createGithubRelease(collectedSHAs) {
     Chore: [],
   };
 
-  console.log("collection oroginal " + collection);
   for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
     promises.push(
       getPRDetails(collectedSHAs[i]).then((response) => {
-        console.log(response);
         const { category, title, clubhouseNumber } = response;
         saveToCollection(collection, category, title, clubhouseNumber);
       })
     );
   }
-  console.log("collection after " + collection);
+
   Promise.all(promises).then(() => {
-    console.log("promises number:" + promises.length);
     const releaseBody = composeReleaseBody(collection);
     console.log("Release body will be: " + releaseBody);
     core.setOutput("release-body", releaseBody);
@@ -281,15 +275,6 @@ function getPRDetails(commitSHA, collection) {
         const title = extractTitleIgnoringClubhouseNumber(prTitle);
         const clubhouseNumber = extractClubhouseStoryNumber(prTitle, prBody);
 
-        console.log("category: " + category);
-        console.log("title: " + title);
-        console.log("clubhouseNumber: " + clubhouseNumber);
-        // collection = saveToCollection(
-        //   collection,
-        //   category,
-        //   title,
-        //   clubhouseNumber
-        // );
         return { category, title, clubhouseNumber };
       }
     })
@@ -297,60 +282,6 @@ function getPRDetails(commitSHA, collection) {
       console.log(error);
     });
 }
-// function createGithubRelease(lastReleaseClubhouseNumbers) {
-//   // Collect PRs (clubhouse story ID) being merged from last release based off last release summary
-//   // sort based on merged timestamp
-//   // If we can't find the PR based off the title, it is part of our next new release
-//   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
-//   // If one latest has been released, then all the ones older than that one must already been released
-//   var collection = {
-//     Feature: [],
-//     Bugfix: [],
-//     Chore: [],
-//   };
-//   const options = getGithubAPIHeader();
-//   console.log("Last Release Clubhouse Numbers: " + lastReleaseClubhouseNumbers);
-//   const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
-//   axios
-//     .get(getClosedPRsURL, options)
-//     .then((response) => {
-//       var data = response.data;
-//       data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
-
-//       for (var i = 0, n = data.length; i < n; ++i) {
-//         if (data[i].merged_at === null) continue;
-//         const PRClubhouseNumber = extractClubhouseStoryNumber(
-//           data[i].title,
-//           data[i].body
-//         );
-//         console.log(
-//           "Clubhouse Numbers included in the last Release: " +
-//             lastReleaseClubhouseNumbers
-//         );
-//         if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
-//           break;
-//         }
-
-//         const branchName = data[i].head.ref;
-//         const category = extractCategory(branchName);
-//         const title = extractTitleIgnoringClubhouseNumber(data[i].title);
-
-//         collection = saveToCollection(
-//           collection,
-//           category,
-//           title,
-//           PRClubhouseNumber
-//         );
-//       }
-
-//       const releaseBody = composeReleaseBody(collection);
-//       console.log("Release body will be: " + releaseBody);
-//       core.setOutput("release-body", releaseBody);
-//     })
-//     .catch((error) => {
-//       console.log(error);
-//     });
-// }
 
 function composeReleaseBody(collection) {
   const labels = {

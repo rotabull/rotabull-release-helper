@@ -275,9 +275,14 @@ function getPRDetails(commitSHA, collection) {
         const clubhouseNumber = extractClubhouseStoryNumber(prTitle, prBody);
 
         console.log("category: " + category);
-        console.log("title:" + title);
+        console.log("title: " + title);
         console.log("clubhouseNumber: " + clubhouseNumber);
-        saveToCollection(collection, category, title, clubhouseNumber);
+        collection = saveToCollection(
+          collection,
+          category,
+          title,
+          clubhouseNumber
+        );
       }
     })
     .catch((error) => {

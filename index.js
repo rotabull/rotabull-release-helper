@@ -18,9 +18,10 @@ async function run() {
 
   try {
     if (actionType === "release") {
-      getLastRelease().then((clubhouseIDs) => {
-        console.log("Last Clubhouse IDs: " + clubhouseIDs);
-        createGithubRelease(clubhouseIDs);
+      getLastReleaseSHA().then((lastReleaseSHA) => {
+        collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
+          createGithubRelease(newPrSHAs);
+        });
       });
     } else if (actionType === "promote") {
       promoteOnHeroku().then((id) => {
@@ -173,100 +174,164 @@ function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
     });
 }
 
-function getGithubAPIHeader() {
+// application / vnd.github.v3 + json;
+function getGithubAPIHeader(acceptHeader) {
   const githubToken = core.getInput("github-token");
 
   const options = {
     headers: {
-      Accept: "application/vnd.github.v3+json",
+      Accept: acceptHeader,
       "Content-Type": "application/json",
       Authorization: `token ${githubToken}`,
     },
   };
   return options;
 }
-function getLastRelease() {
-  const options = getGithubAPIHeader();
 
-  // get last release tag to determine the next release tag
-  const getLatestReleaseUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/releases/latest`;
-  // TODO
+// returns the last commit sha included in the last release
+function getLastReleaseSHA() {
+  const options = getGithubAPIHeader("application/vnd.github.v3+json");
+  const getGithubTagsUrl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/tags`;
   return axios
-    .get(getLatestReleaseUrl, options)
+    .get(getGithubTagsUrl, options)
     .then((response) => {
-      console.log("Release Latest Response:" + JSON.stringify(response.data));
+      console.log("Last Github Release tags:" + JSON.stringify(response.data));
+      const lastTag = response.data === [] ? null : response.data[0];
+      const lastReleaseSHA =
+        response.data === [] ? null : response.data[0].commit.sha;
       const nextReleaseTag = getNextReleaseTag(
-        response.data.tag_name,
+        lastTag,
         moment().format("YYYY.MM.DD")
       );
 
-      const lastReleaseClubhouseNumbers = extractAllClubhouseNumbersFromLastRelease(
-        response.data.body
-      );
-
-      console.log(lastReleaseClubhouseNumbers);
       core.setOutput("release-tag", nextReleaseTag);
       core.setOutput("release-title", `Release ${nextReleaseTag}`);
-      return lastReleaseClubhouseNumbers;
+      return lastReleaseSHA;
     })
     .catch((error) => {
       console.log(error);
     });
 }
-function createGithubRelease(lastReleaseClubhouseNumbers) {
-  // Collect PRs (clubhouse story ID) being merged from last release based off last release summary
-  // sort based on merged timestamp
-  // If we can't find the PR based off the title, it is part of our next new release
-  // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
-  // If one latest has been released, then all the ones older than that one must already been released
+
+function collectNewCommitSHAs(lastReleaseSHA) {
+  const options = getGithubAPIHeader("application/vnd.github.v3+json");
+  const getGithubCommitsURl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits`;
+  var collectedSHAs = [];
+  return axios
+    .get(getGithubCommitsURl, options)
+    .then((response) => {
+      console.log("Get Rotabull Commits: " + JSON.stringify(response.data));
+      const data = response.data;
+      for (var i = 0, n = data.length; i < n; ++i) {
+        if (data[i].sha === lastReleaseSHA) break;
+        collectedSHAs[collectedSHAs.length - 1] = data[i].sha;
+      }
+      return collectedSHAs;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
+function createGithubRelease(collectedSHAs) {
   var collection = {
     Feature: [],
     Bugfix: [],
     Chore: [],
   };
-  const options = getGithubAPIHeader();
-  console.log("Last Release Clubhouse Numbers: " + lastReleaseClubhouseNumbers);
-  const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
-  axios
-    .get(getClosedPRsURL, options)
+
+  let promises = [];
+
+  for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
+    promises.push(getPRDetails(collectedSHAs[i]));
+  }
+
+  Promise.all(promises).then(() => {
+    const releaseBody = composeReleaseBody(collection);
+    console.log("Release body will be: " + releaseBody);
+    core.setOutput("release-body", releaseBody);
+  });
+}
+
+function getPRDetails(commitSHA, collection) {
+  const options = getGithubAPIHeader(
+    "application/vnd.github.groot-preview+json"
+  );
+  const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}/pulls`;
+  return axios
+    .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+      if (data !== []) {
+        const prTitle = data[0].title;
+        const prBody = data[0].body;
+        const branchName = data[0].head.ref;
 
-      for (var i = 0, n = data.length; i < n; ++i) {
-        if (data[i].merged_at === null) continue;
-        const PRClubhouseNumber = extractClubhouseStoryNumber(
-          data[i].title,
-          data[i].body
-        );
-        console.log(
-          "Clubhouse Numbers included in the last Release: " +
-            lastReleaseClubhouseNumbers
-        );
-        if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
-          break;
-        }
-
-        const branchName = data[i].head.ref;
         const category = extractCategory(branchName);
-        const title = extractTitleIgnoringClubhouseNumber(data[i].title);
+        const title = extractTitleIgnoringClubhouseNumber(prTitle);
+        const clubhouseNumber = extractClubhouseStoryNumber(prTitle, prBody);
 
-        collection = saveToCollection(
-          collection,
-          category,
-          title,
-          PRClubhouseNumber
-        );
+        saveToCollection(collection, category, title, clubhouseNumber);
       }
-
-      const releaseBody = composeReleaseBody(collection);
-      console.log("Release body will be: " + releaseBody);
-      core.setOutput("release-body", releaseBody);
     })
     .catch((error) => {
       console.log(error);
     });
 }
+// function createGithubRelease(lastReleaseClubhouseNumbers) {
+//   // Collect PRs (clubhouse story ID) being merged from last release based off last release summary
+//   // sort based on merged timestamp
+//   // If we can't find the PR based off the title, it is part of our next new release
+//   // If we found one matching any one of the previous clubhouse stories we have matched, then break the loop
+//   // If one latest has been released, then all the ones older than that one must already been released
+//   var collection = {
+//     Feature: [],
+//     Bugfix: [],
+//     Chore: [],
+//   };
+//   const options = getGithubAPIHeader();
+//   console.log("Last Release Clubhouse Numbers: " + lastReleaseClubhouseNumbers);
+//   const getClosedPRsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/pulls?state=closed`;
+//   axios
+//     .get(getClosedPRsURL, options)
+//     .then((response) => {
+//       var data = response.data;
+//       data.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+
+//       for (var i = 0, n = data.length; i < n; ++i) {
+//         if (data[i].merged_at === null) continue;
+//         const PRClubhouseNumber = extractClubhouseStoryNumber(
+//           data[i].title,
+//           data[i].body
+//         );
+//         console.log(
+//           "Clubhouse Numbers included in the last Release: " +
+//             lastReleaseClubhouseNumbers
+//         );
+//         if (lastReleaseClubhouseNumbers.includes(PRClubhouseNumber)) {
+//           break;
+//         }
+
+//         const branchName = data[i].head.ref;
+//         const category = extractCategory(branchName);
+//         const title = extractTitleIgnoringClubhouseNumber(data[i].title);
+
+//         collection = saveToCollection(
+//           collection,
+//           category,
+//           title,
+//           PRClubhouseNumber
+//         );
+//       }
+
+//       const releaseBody = composeReleaseBody(collection);
+//       console.log("Release body will be: " + releaseBody);
+//       core.setOutput("release-body", releaseBody);
+//     })
+//     .catch((error) => {
+//       console.log(error);
+//     });
+// }
 
 function composeReleaseBody(collection) {
   const labels = {
@@ -301,7 +366,8 @@ function saveToCollection(collection, category, title, PRClubhouseNumber) {
     : "[NoStoryID]";
   const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
-  titles[titles.length] = content;
+  // titles[titles.length] = content;
+  titles.push(content);
   return collection;
 }
 
@@ -376,7 +442,7 @@ module.exports = {
   checkPromotionStatus: checkPromotionStatus,
   createGithubRelease: createGithubRelease,
   getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
-  getLastRelease: getLastRelease,
+  getLastReleaseSHA: getLastReleaseSHA,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseStoryNumber: extractClubhouseStoryNumber,
   extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,

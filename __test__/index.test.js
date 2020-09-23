@@ -147,8 +147,8 @@ describe("index.js", () => {
     });
   });
 
-  describe("getLastRelease", () => {
-    test("calls get last release github api and returns valid clubhouse numbers array", () => {
+  describe("getLastReleaseSHA", () => {
+    test("calls get tags github api and returns last releasee SHA", () => {
       const options = {
         headers: {
           Accept: "application/vnd.github.v3+json",
@@ -158,93 +158,129 @@ describe("index.js", () => {
       };
 
       const response = {
-        data: {
-          tag_name: "v1.13.1",
-          body: "blah blah blah [ch12345], [ch0909], [ch7789] blah blah blah",
-        },
+        data: [
+          {
+            name: "v2020.09.21",
+            commit: {
+              sha: "35b00319d847052f5967281e821e3b609ca1f538",
+              url:
+                "https://api.github.com/repos/rotabull/rotabull/commits/35b00319d847052f5967281e821e3b609ca1f538",
+            },
+            node_id: "MDM6UmVmMTIzNDg2Mjk3OnJlZnMvdGFncy92MjAyMC4wOS4yMQ==",
+          },
+          {
+            name: "v2020.09.17.1",
+            commit: {
+              sha: "56bf641f43112715ce18ac9a3b2f858966d048c2",
+              url:
+                "https://api.github.com/repos/rotabull/rotabull/commits/56bf641f43112715ce18ac9a3b2f858966d048c2",
+            },
+            node_id: "MDM6UmVmMTIzNDg2Mjk3OnJlZnMvdGFncy92MjAyMC4wOS4xNy4x",
+          },
+        ],
       };
       axios.get.mockImplementationOnce(() => Promise.resolve(response));
-      const clubhouseNumbers = main.getLastRelease();
+      const releaseSHA = main.getLastReleaseSHA();
       expect(axios.get).toHaveBeenCalledWith(
-        "https://api.github.com/repos/rotabull/rotabull/releases/latest",
+        "https://api.github.com/repos/rotabull/rotabull/tags",
         options
       );
-      return clubhouseNumbers.then((numbers) => {
-        expect(numbers.includes("0909")).toBe(true);
-        expect(numbers.includes("7789")).toBe(true);
+      return releaseSHA.then((sha) => {
+        expect(sha).toBe("35b00319d847052f5967281e821e3b609ca1f538");
       });
     });
   });
 
-  // describe("createGithubRelease", () => {
-  //   test("calls get closed PRs Github API and sets release body", () => {
-  //     const releasedClubhouseNumber = ["3331"];
-  //     const options = {
-  //       headers: {
-  //         Accept: "application/vnd.github.v3+json",
-  //         "Content-Type": "application/json",
-  //         Authorization: `token some-random-token`,
-  //       },
-  //     };
-  //     const response = {
-  //       data: [
-  //         {
-  //           title: "Demo/context 2",
-  //           merged_at: null,
-  //           body: "blablah",
-  //           head: {
-  //             ref: "demo/context-2",
-  //           },
-  //         },
-  //         {
-  //           title:
-  //             "[ch3681] Properly display/download attachments from an email quote",
-  //           merged_at: "2020-09-11T23:37:25Z",
-  //           body: "blablah2",
-  //           head: {
-  //             ref: "bug/ch3681",
-  //           },
-  //         },
-  //         {
-  //           title:
-  //             "Change Quickbooks invoice worker to run every 10 minutes [ch3644]",
-  //           merged_at: "2020-09-10T17:52:50Z",
-  //           body: "blablah3",
-  //           head: {
-  //             ref: "bugfix/qbo-sync-schedule",
-  //           },
-  //         },
-  //         {
-  //           title: "Clean up notification emails [ch3331]",
-  //           merged_at: "2020-09-10T17:49:05Z",
-  //           body: "blablah4",
-  //           head: {
-  //             ref: "feature/ch3331",
-  //           },
-  //         },
-  //       ],
-  //     };
-  //     axios.get.mockImplementationOnce(() => Promise.resolve(response));
-  //     main.createGithubRelease(releasedClubhouseNumber);
-  //     expect(axios.get).toHaveBeenCalledWith(
-  //       "https://api.github.com/repos/rotabull/rotabull/pulls?state=closed",
-  //       options
-  //     );
+  describe("collectionNewCommitSHAs", () => {
+    test("calls the github commits API and returns an array of commit SHAs for the upcoming release", () => {
+      const options = {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+          Authorization: `token some-random-token`,
+        },
+      };
+      const lastSHA = "64bda140bc4eea1a99fbc981a0b24eae8bec1745";
+      const response = {
+        data: [
+          {
+            sha: "6466b8eb22ddce5d6dd68c665318207037756cb0",
+          },
+          {
+            sha: "982a7b9edb0f4a4305141c11868ce7bcd3b18e4e",
+          },
+          {
+            sha: "174bfd8609ca9227d498df0c443858fceea51a20",
+          },
+          {
+            sha: "b0af03289aff7d7e62bb80e9fe4444caa7943b2f",
+          },
+          {
+            sha: lastSHA,
+          },
+          {
+            sha: "1a4485d7466256915a1d50439b580e9d26b78864",
+          },
+          {
+            sha: "f5434291f82428d024e236f0e250b72151c3ec11",
+          },
+        ],
+      };
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      const promise = main.collectNewCommitSHAs(lastSHA);
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.github.com/repos/rotabull/rotabull/commits",
+        options
+      );
+      return promise.then((array) => {
+        expect(array).toEqual([
+          "6466b8eb22ddce5d6dd68c665318207037756cb0",
+          "982a7b9edb0f4a4305141c11868ce7bcd3b18e4e",
+          "174bfd8609ca9227d498df0c443858fceea51a20",
+          "b0af03289aff7d7e62bb80e9fe4444caa7943b2f",
+        ]);
+      });
+    });
+  });
 
-  //     const expectedReleaseNote =
-  //       "## What's Changed\r\n" +
-  //       "\r\n" +
-  //       "### Bugfixes -- 🐞\r\n" +
-  //       "\r\n" +
-  //       "* Properly display/download attachments from an email quote [ch3681](https://app.clubhouse.io/rotabull/story/3681)\r\n" +
-  //       "\r\n" +
-  //       "* Change Quickbooks invoice worker to run every 10 minutes [ch3644](https://app.clubhouse.io/rotabull/story/3644)\r\n";
-  //     setImmediate(() => {
-  //       expect(outputs["release-body"]).toBe(expectedReleaseNote);
-  //     });
-  //   });
-  // });
+  describe("getPRDetail", () => {
+    test("calls the commit pulls github api and returns categroy, title, and clubhouse number for a particular commit", () => {
+      const options = {
+        headers: {
+          Accept: "application/vnd.github.groot-preview+json",
+          "Content-Type": "application/json",
+          Authorization: `token some-random-token`,
+        },
+      };
+      const response = {
+        data: [
+          {
+            title:
+              "[ch3681] Properly display/download attachments from an email quote",
+            merged_at: "2020-09-11T23:37:25Z",
+            body: "blablah2",
+            head: {
+              ref: "bug/ch3681",
+            },
+          },
+        ],
+      };
 
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      const promise = main.getPRDetails("random-sha");
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.github.com/repos/rotabull/rotabull/commits/random-sha/pulls",
+        options
+      );
+      return promise.then((res) => {
+        expect(res).toEqual({
+          category: "Bugfix",
+          title: "Properly display/download attachments from an email quote",
+          clubhouseNumber: "3681",
+        });
+      });
+    });
+  });
   describe("composeReleaseBody", () => {
     test("titles collection is empty returns an empty body", () => {
       const collection = {

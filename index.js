@@ -257,7 +257,7 @@ function createGithubRelease(collectedSHAs) {
   });
 }
 
-function getPRDetails(commitSHA, collection) {
+function getPRDetails(commitSHA) {
   const options = getGithubAPIHeader(
     "application/vnd.github.groot-preview+json"
   );
@@ -375,6 +375,7 @@ function extractTitleIgnoringClubhouseNumber(title) {
 function getNextReleaseTag(lastReleaseTag, todayDate) {
   console.log("Last release tag is " + lastReleaseTag);
 
+  if (lastReleaseTag === null) return `v${todayDate}`;
   if (lastReleaseTag === `v${todayDate}`) {
     return `${lastReleaseTag}.1`;
   } else if (lastReleaseTag.includes(todayDate)) {
@@ -388,9 +389,11 @@ function getNextReleaseTag(lastReleaseTag, todayDate) {
 
 module.exports = {
   checkPromotionStatus: checkPromotionStatus,
+  collectNewCommitSHAs: collectNewCommitSHAs,
   createGithubRelease: createGithubRelease,
   getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastReleaseSHA: getLastReleaseSHA,
+  getPRDetails: getPRDetails,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseStoryNumber: extractClubhouseStoryNumber,
   extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,

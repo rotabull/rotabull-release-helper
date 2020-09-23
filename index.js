@@ -246,7 +246,13 @@ function createGithubRelease(collectedSHAs) {
 
   console.log("collection oroginal " + collection);
   for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
-    promises.push(getPRDetails(collectedSHAs[i]));
+    promises.push(
+      getPRDetails(collectedSHAs[i]).then((response) => {
+        console.log(response);
+        const { category, title, clubhouseNumber } = response;
+        saveToCollection(collection, category, title, clubhouseNumber);
+      })
+    );
   }
   console.log("collection after " + collection);
   Promise.all(promises).then(() => {
@@ -278,12 +284,13 @@ function getPRDetails(commitSHA, collection) {
         console.log("category: " + category);
         console.log("title: " + title);
         console.log("clubhouseNumber: " + clubhouseNumber);
-        collection = saveToCollection(
-          collection,
-          category,
-          title,
-          clubhouseNumber
-        );
+        // collection = saveToCollection(
+        //   collection,
+        //   category,
+        //   title,
+        //   clubhouseNumber
+        // );
+        return { category, title, clubhouseNumber };
       }
     })
     .catch((error) => {

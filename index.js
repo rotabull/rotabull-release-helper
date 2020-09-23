@@ -67,7 +67,6 @@ function getLastHerokuReleaseStatus(retries, timeout) {
       }
 
       if (status === "succeeded" || status === "failed") {
-        console.log("lalal");
         core.setOutput("source-app-status", status);
       } else {
         if (retries > 0) {
@@ -287,11 +286,9 @@ function composeReleaseBody(collection) {
       notes += subheader;
       titlesCollection.forEach((element) => {
         notes += newLine + "* " + element + newLine;
-        console.log("notes" + notes);
       });
     }
   }
-  console.log("PR Count" + totalPRCount);
 
   if (totalPRCount > 0) return header + notes;
   return notes;

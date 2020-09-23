@@ -216,7 +216,8 @@ function getLastReleaseSHA() {
 function collectNewCommitSHAs(lastReleaseSHA) {
   const options = getGithubAPIHeader("application/vnd.github.v3+json");
   const getGithubCommitsURl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits`;
-  var collectedSHAs = [];
+  var collectedSHAs = new Array();
+  console.log("last commit sha is " + lastReleaseSHA);
   return axios
     .get(getGithubCommitsURl, options)
     .then((response) => {
@@ -225,6 +226,7 @@ function collectNewCommitSHAs(lastReleaseSHA) {
       for (var i = 0, n = data.length; i < n; ++i) {
         if (data[i].sha === lastReleaseSHA) break;
         collectedSHAs.push(data[i].sha);
+        // collectedSHAs[collectedSHAs.length] = data[i].sha;
       }
       console.log("CollectedSHAs are:" + collectedSHAs);
       return collectedSHAs;

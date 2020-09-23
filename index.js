@@ -377,9 +377,9 @@ function saveToCollection(collection, category, title, PRClubhouseNumber) {
     : "[NoStoryID]";
   const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
-  // titles[titles.length] = content;
-  titles.push(content);
-  console.log(collection);
+  titles[titles.length] = content;
+  // titles.push(content);
+  console.log("collection is:" + collection);
   return collection;
 }
 

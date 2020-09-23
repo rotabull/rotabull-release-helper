@@ -8,8 +8,10 @@ const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
 const newLine = "\r\n";
-const RETRIES = 10;
-const TIME_OUT = 20000;
+const PROMOTE_RETRIES = 10;
+const PROMOTE_TIME_OUT = 20000;
+const CHECK_STATUS_RETRIES = 20;
+const CHECK_STATUS_TIME_OUT = 60000;
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -23,10 +25,11 @@ async function run() {
     } else if (actionType === "promote") {
       promoteOnHeroku().then((id) => {
         console.log("Promotion ID is set to " + id);
-        checkPromotionStatus(id, RETRIES, TIME_OUT);
+        checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
       });
+    } else if (actionType === "check-status") {
+      getLastHerokuReleaseStatus(CHECK_STATUS_RETRIES, CHECK_STATUS_TIME_OUT);
     }
-    /// end of catch
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -34,6 +37,51 @@ async function run() {
 
 run();
 
+function getLastHerokuReleaseStatus(retries, timeout) {
+  const SOURCE_APP_ID = core.getInput("source-app-id");
+  const HEROKU_API_KEY = core.getInput("heroku-api-key");
+
+  const herokuReleaseURL = `${HEROKU_API_BASE_URL}/apps/${SOURCE_APP_ID}/releases`;
+  const options = {
+    headers: {
+      Accept: "application/vnd.heroku+json; version=3",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${HEROKU_API_KEY}`,
+      Range: "version; order=desc",
+    },
+  };
+
+  axios
+    .get(herokuReleaseURL, options)
+    .then((response) => {
+      console.log(
+        "checking last release status for source app " + retries + "..."
+      );
+      var status = null;
+
+      if (response.data === []) {
+        status = "succeeded";
+      } else {
+        console.log(response.data[0]);
+        status = response.data[0].status; //get the most recent
+      }
+
+      if (status === "succeeded" || status === "failed") {
+        core.setOutput("source-app-status", status);
+      } else {
+        if (retries > 0) {
+          setTimeout(() => {
+            return getLastHerokuReleaseStatus(retries - 1, timeout);
+          }, timeout);
+        } else {
+          core.setOutput("source-app-status", "RETRY MAXIMUM REACHED");
+        }
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
 function promoteOnHeroku() {
   const PIPELINE_ID = core.getInput("pipeline-id");
   const SOURCE_APP_ID = core.getInput("source-app-id");
@@ -238,11 +286,9 @@ function composeReleaseBody(collection) {
       notes += subheader;
       titlesCollection.forEach((element) => {
         notes += newLine + "* " + element + newLine;
-        console.log("notes" + notes);
       });
     }
   }
-  console.log("PR Count" + totalPRCount);
 
   if (totalPRCount > 0) return header + notes;
   return notes;
@@ -250,7 +296,10 @@ function composeReleaseBody(collection) {
 
 function saveToCollection(collection, category, title, PRClubhouseNumber) {
   console.log("category is:" + category);
-  const content = `${title} [ch${PRClubhouseNumber}](${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
+  const clubhouseNumber = PRClubhouseNumber
+    ? `[ch${PRClubhouseNumber}]`
+    : "[NoStoryID]";
+  const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
   titles[titles.length] = content;
   return collection;
@@ -265,7 +314,7 @@ function extractClubhouseStoryNumber(title, body) {
 }
 
 function extractClubhouseNumberFromPRBody(body) {
-  var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9][0-9][0-9][0-9]/g;
+  var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9]+/g;
   var arr = body.match(rx);
   if (arr === null) return null;
   const data = arr[0].split("/");
@@ -273,11 +322,11 @@ function extractClubhouseNumberFromPRBody(body) {
 }
 
 function extractClubhouseNumberFromPRTitle(title) {
-  var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
+  var rx = /\[ch[0-9]+\]/g;
   var arr = title.match(rx);
   if (arr === null) return null;
 
-  var rx2 = /[0-9][0-9][0-9][0-9]/g;
+  var rx2 = /[0-9]+/g;
   return arr[0].match(rx2)[0];
 }
 
@@ -295,8 +344,8 @@ function extractCategory(branchName) {
 }
 
 function extractAllClubhouseNumbersFromLastRelease(body) {
-  var rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
-  var rx2 = /[0-9][0-9][0-9][0-9]/g;
+  var rx = /\[ch[0-9]+\]/g;
+  var rx2 = /[0-9]+/g;
   var arr = body.match(rx);
   if (arr === null) return null;
   const newArray = arr.map((element) => element.match(rx2)[0]);
@@ -304,7 +353,7 @@ function extractAllClubhouseNumbersFromLastRelease(body) {
 }
 
 function extractTitleIgnoringClubhouseNumber(title) {
-  const rx = /\[ch[0-9][0-9][0-9][0-9]\]/g;
+  const rx = /\[ch[0-9]+\]/g;
   const replaceWith = "";
   const after = title.replace(rx, replaceWith);
   return after.trim();
@@ -326,8 +375,10 @@ function getNextReleaseTag(lastReleaseTag, todayDate) {
 module.exports = {
   checkPromotionStatus: checkPromotionStatus,
   createGithubRelease: createGithubRelease,
+  getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastRelease: getLastRelease,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
+  extractClubhouseStoryNumber: extractClubhouseStoryNumber,
   extractClubhouseNumberFromPRTitle: extractClubhouseNumberFromPRTitle,
   extractClubhouseNumberFromPRBody: extractClubhouseNumberFromPRBody,
   extractCategory: extractCategory,
@@ -335,4 +386,5 @@ module.exports = {
   composeReleaseBody: composeReleaseBody,
   getNextReleaseTag: getNextReleaseTag,
   promoteOnHeroku: promoteOnHeroku,
+  saveToCollection: saveToCollection,
 };

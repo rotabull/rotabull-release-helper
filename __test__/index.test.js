@@ -19,6 +19,7 @@ var outputs = {
   "release-body": undefined,
   "release-title": undefined,
   "release-tag": undefined,
+  "source-app-status": undefined,
 };
 
 describe("index.js", () => {
@@ -77,6 +78,44 @@ describe("index.js", () => {
       //https://jestjs.io/docs/en/asynchronous#promises
       return herokuPromotionID.then((id) => {
         expect(id).toBe("some-promotion-id-returned-by-api");
+      });
+    });
+  });
+
+  describe("getLastHerokuReleaseStatus", () => {
+    test("calls the heroku release promotion status api", () => {
+      const params = {
+        headers: {
+          Accept: "application/vnd.heroku+json; version=3",
+          Authorization: "Bearer heroku12346",
+          "Content-Type": "application/json",
+          Range: "version; order=desc",
+        },
+      };
+
+      const response1 = {
+        data: [
+          {
+            status: "succeeded",
+          },
+          {
+            status: "succeeded",
+          },
+        ],
+      };
+
+      axios.get.mockReturnValueOnce(Promise.resolve(response1));
+
+      main.getLastHerokuReleaseStatus(20, 60000);
+
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.heroku.com/apps/staging1234/releases",
+        params
+      );
+
+      setImmediate(() => {
+        expect(outputs["source-app-status"]).toBe("succeeded");
       });
     });
   });
@@ -232,6 +271,74 @@ describe("index.js", () => {
           "\r\n### Chores -- ⚙\r\n" +
           "\r\n* Story 2 [ch3333](www.google2.com)\r\n"
       );
+    });
+  });
+  describe("saveToCollection", () => {
+    test("if Clubhouse number is null", () => {
+      var collection = {
+        Feature: [],
+        Bugfix: [],
+        Chore: [],
+      };
+
+      const category = "Bugfix";
+      const clubhouseNumber = null;
+      const title = "Story 1";
+
+      const expectedCollection = {
+        Feature: [],
+        Bugfix: [
+          "Story 1 [NoStoryID](https://app.clubhouse.io/rotabull/story/null)",
+        ],
+        Chore: [],
+      };
+      main.saveToCollection(collection, category, title, clubhouseNumber);
+      expect(collection).toEqual(expectedCollection);
+    });
+
+    test("if Clubhouse number is not null", () => {
+      var collection = {
+        Feature: [],
+        Bugfix: [],
+        Chore: [],
+      };
+
+      const category = "Feature";
+      const clubhouseNumber = "1234";
+      const title = "Story 1";
+      const expectedCollection = {
+        Feature: [
+          "Story 1 [ch1234](https://app.clubhouse.io/rotabull/story/1234)",
+        ],
+        Bugfix: [],
+        Chore: [],
+      };
+      main.saveToCollection(collection, category, title, clubhouseNumber);
+      expect(collection).toEqual(expectedCollection);
+    });
+  });
+  describe("extractClubhouseStoryNumber", () => {
+    test("returns clubhouse number when PR title contains clubhouse number", () => {
+      const title = "test [ch1234]";
+      const body = "I don't know";
+      const chNumber = main.extractClubhouseStoryNumber(title, body);
+
+      expect(chNumber).toEqual("1234");
+    });
+    test("returns clubhouse number from PR body if PR title does not contain clubhouse number", () => {
+      const title = "I don't have a number";
+      const body =
+        "https://app.clubhouse.io/rotabull/story/3860/release-actions-improvements-clean-up";
+      const chNumber = main.extractClubhouseStoryNumber(title, body);
+
+      expect(chNumber).toEqual("3860");
+    });
+    test("returns null if no clubhouse number found in both PR title and body", () => {
+      const title = "hey[ch";
+      const body = "https://app.clubhouse.io/rotabull/story/STORY_ID";
+      const chNumber = main.extractClubhouseStoryNumber(title, body);
+
+      expect(chNumber).toEqual(null);
     });
   });
 

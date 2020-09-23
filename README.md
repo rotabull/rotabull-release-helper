@@ -12,7 +12,7 @@ Please see repo: https://github.com/rotabull/rotabull-release-helper
 
 ### `action-type`
 
-**Required** The name of the person to greet. Either "promote" or "release"
+**Required** The name of the person to greet. Either "promote" or "release" or "check-status"
 
 ### `heroku-api-key`
 
@@ -47,6 +47,10 @@ Github Release Body / Notes
 ### `promotion-status`
 
 Heroku Promotion Status
+
+### `source-app-status`
+
+Last Heroku Release Status
 
 ## Example usage
 

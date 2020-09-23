@@ -194,10 +194,10 @@ function getLastReleaseSHA() {
   return axios
     .get(getGithubTagsUrl, options)
     .then((response) => {
-      console.log("Last Github Release tags:" + JSON.stringify(response.data));
       const lastTag = response.data === [] ? null : response.data[0].name;
       const lastReleaseSHA =
         response.data === [] ? null : response.data[0].commit.sha;
+      console.log("Last Release SHA:" + lastReleaseSHA);
       const nextReleaseTag = getNextReleaseTag(
         lastTag,
         moment().format("YYYY.MM.DD")
@@ -310,15 +310,13 @@ function composeReleaseBody(collection) {
 }
 
 function saveToCollection(collection, category, title, PRClubhouseNumber) {
-  console.log("category is:" + category);
   const clubhouseNumber = PRClubhouseNumber
     ? `[ch${PRClubhouseNumber}]`
     : "[NoStoryID]";
   const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
   titles[titles.length] = content;
-  // titles.push(content);
-  console.log("collection is:" + collection);
+
   return collection;
 }
 
@@ -348,7 +346,6 @@ function extractClubhouseNumberFromPRTitle(title) {
 }
 
 function extractCategory(branchName) {
-  console.log("branch name is : " + branchName);
   const prefix = branchName.split("/")[0].toLowerCase();
 
   if (prefix === "bug" || prefix === "bugfix") {

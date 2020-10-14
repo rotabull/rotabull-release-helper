@@ -266,6 +266,8 @@ function getPRDetails(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
+      console.log("debug:");
+      console.log(data);
       if (data !== []) {
         const prTitle = data[0].title;
         const prBody = data[0].body;

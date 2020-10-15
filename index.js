@@ -280,7 +280,7 @@ function getPRDetails(commitSHA) {
       var data = response.data;
       console.log("debug:");
       console.log(data);
-      if (data !== []) {
+      if (data && data !== []) {
         const prTitle = data[0].title;
         const prBody = data[0].body;
         const branchName = data[0].head.ref;
@@ -288,6 +288,39 @@ function getPRDetails(commitSHA) {
         const category = extractCategory(branchName);
         const title = extractTitleIgnoringClubhouseNumber(prTitle);
         const clubhouseNumber = extractClubhouseStoryNumber(prTitle, prBody);
+
+        return { category, title, clubhouseNumber };
+      } else {
+        return getCommitDetail(commitSHA);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
+function getCommitDetail(commitSHA) {
+  const options = getGithubAPIHeader(
+    "application/vnd.github.groot-preview+json"
+  );
+  console.log("debug2");
+  const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}`;
+
+  axios
+    .get(getPRDetailsURL, options)
+    .then((response) => {
+      var data = response.data;
+      console.log("debug commit detail:");
+      console.log(data.message);
+      if (data && data !== []) {
+        const commitMessage = data.message;
+        console.log("debug commit detail2:" + data.message);
+        const category = extractCategory(commitMessage);
+        const title = extractTitleIgnoringClubhouseNumber(commitMessage);
+        const clubhouseNumber = extractClubhouseStoryNumber(
+          commitMessage,
+          commitMessage
+        );
 
         return { category, title, clubhouseNumber };
       }

@@ -280,7 +280,7 @@ function getPRDetails(commitSHA) {
       var data = response.data;
       console.log("debug:");
       console.log(data);
-      if (data && data !== []) {
+      if (data && data.length !== 0) {
         const prTitle = data[0].title;
         const prBody = data[0].body;
         const branchName = data[0].head.ref;
@@ -312,7 +312,7 @@ function getCommitDetail(commitSHA) {
       var data = response.data;
       console.log("debug commit detail:");
       console.log(data.message);
-      if (data && data !== []) {
+      if (data && data.length !== 0) {
         const commitMessage = data.message;
         console.log("debug commit detail2:" + data.message);
         const category = extractCategory(commitMessage);

@@ -316,6 +316,7 @@ function getCommitDetail(commitSHA) {
         const commitMessage = data.commit.message;
         console.log("debug commit detail2:" + data.commit.message);
         const category = extractCategory(commitMessage);
+        console.log("category:" + category);
         const title = extractTitleIgnoringClubhouseNumber(commitMessage);
         const clubhouseNumber = extractClubhouseStoryNumber(
           commitMessage,

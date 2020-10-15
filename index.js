@@ -241,7 +241,8 @@ function createGithubRelease(collectedSHAs) {
     Chore: [],
   };
 
-  for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
+  // for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
+  for (var i = 0, n = 1; i < n; ++i) {
     promises.push(
       getPRDetails(collectedSHAs[i]).then((response) => {
         const { category, title, clubhouseNumber } = response;

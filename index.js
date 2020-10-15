@@ -244,10 +244,13 @@ function createGithubRelease(collectedSHAs) {
   // for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
   for (var i = 0, n = 1; i < n; ++i) {
     promises.push(
-      getPRDetails(collectedSHAs[i]).then((response) => {
-        const { category, title, clubhouseNumber } = response;
-        saveToCollection(collection, category, title, clubhouseNumber);
-      })
+      // getPRDetails(collectedSHAs[i]).then((response) => {
+      getPRDetails("824250878f21545e4eff33fc5a3cfcd4d3b9afa3").then(
+        (response) => {
+          const { category, title, clubhouseNumber } = response;
+          saveToCollection(collection, category, title, clubhouseNumber);
+        }
+      )
     );
   }
 

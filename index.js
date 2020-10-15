@@ -254,20 +254,26 @@ function createGithubRelease(collectedSHAs) {
     );
   }
 
-  Promise.all(promises).then(() => {
-    const releaseBody = composeReleaseBody(collection);
-    console.log("Release body will be: " + releaseBody);
-    core.setOutput("release-body", releaseBody);
-  });
+  Promise.all(promises)
+    .then(() => {
+      const releaseBody = composeReleaseBody(collection);
+      console.log("Release body will be: " + releaseBody);
+      core.setOutput("release-body", releaseBody);
+    })
+    .catch((error) => {
+      console.log("something wrong");
+      console.log(error);
+    });
 }
 
 function getPRDetails(commitSHA) {
   const options = getGithubAPIHeader(
     "application/vnd.github.groot-preview+json"
   );
-  // const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}/pulls`;
-  const getPRDetailsURl =
-    "https://api.github.com/repos/rotabull/rotabull/commits/824250878f21545e4eff33fc5a3cfcd4d3b9afa3/pulls";
+  console.log("debug2");
+  const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}/pulls`;
+  // const getPRDetailsURl =
+  //   "https://api.github.com/repos/rotabull/rotabull/commits/824250878f21545e4eff33fc5a3cfcd4d3b9afa3/pulls";
   return axios
     .get(getPRDetailsURL, options)
     .then((response) => {

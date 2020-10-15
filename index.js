@@ -309,12 +309,12 @@ function getCommitDetail(commitSHA) {
   axios
     .get(getPRDetailsURL, options)
     .then((response) => {
-      // var data = response.data;
+      var data = response.data;
       console.log("debug commit detail:");
-      console.log(response);
+
       if (data && data.length !== 0) {
-        const commitMessage = data.message;
-        console.log("debug commit detail2:" + data.message);
+        const commitMessage = data.commit.message;
+        console.log("debug commit detail2:" + data.commit.message);
         const category = extractCategory(commitMessage);
         const title = extractTitleIgnoringClubhouseNumber(commitMessage);
         const clubhouseNumber = extractClubhouseStoryNumber(

@@ -7,11 +7,11 @@ const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
-const newLine = "\r\n";
 const PROMOTE_RETRIES = 10;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
+const newLine = "\r\n";
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -60,7 +60,7 @@ function getLastHerokuReleaseStatus(retries, timeout) {
       );
       var status = null;
 
-      if (response.data === []) {
+      if (response.data && response.data.length === 0) {
         status = "succeeded";
       } else {
         console.log(response.data[0]);

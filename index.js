@@ -306,7 +306,7 @@ function getCommitDetail(commitSHA) {
   console.log("debug2");
   const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}`;
 
-  axios
+  return axios
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;

@@ -28,8 +28,18 @@ async function run() {
         console.log("Promotion ID is set to " + id);
         checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
       });
-    } else if (actionType === "check-status") {
-      getLastHerokuReleaseStatus(CHECK_STATUS_RETRIES, CHECK_STATUS_TIME_OUT);
+    } else if (actionType === "source-release-status") {
+      getLastHerokuReleaseStatus(
+        true,
+        CHECK_STATUS_RETRIES,
+        CHECK_STATUS_TIME_OUT
+      );
+    } else if (actionType === "target-release-status") {
+      getLastHerokuReleaseStatus(
+        false,
+        CHECK_STATUS_RETRIES,
+        CHECK_STATUS_TIME_OUT
+      );
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -38,11 +48,14 @@ async function run() {
 
 run();
 
-function getLastHerokuReleaseStatus(retries, timeout) {
-  const SOURCE_APP_ID = core.getInput("source-app-id");
+function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
+  const appId = isSourceApp
+    ? core.getInput("source-app-id")
+    : core.getInput("target-app-id");
+  const outputName = isSourceApp ? "source-app-status" : "target-app-status";
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
-  const herokuReleaseURL = `${HEROKU_API_BASE_URL}/apps/${SOURCE_APP_ID}/releases`;
+  const herokuReleaseURL = `${HEROKU_API_BASE_URL}/apps/${appId}/releases`;
   const options = {
     headers: {
       Accept: "application/vnd.heroku+json; version=3",
@@ -55,27 +68,39 @@ function getLastHerokuReleaseStatus(retries, timeout) {
   axios
     .get(herokuReleaseURL, options)
     .then((response) => {
-      console.log(
-        "checking last release status for source app " + retries + "..."
-      );
-      var status = null;
+      console.log("checking last release status for app" + retries + "...");
+      var status = null,
+        appName = null,
+        description = null,
+        timestamp = null,
+        version = null;
 
       if (response.data && response.data.length === 0) {
         status = "succeeded";
       } else {
-        console.log(response.data[0]);
-        status = response.data[0].status; //get the most recent
+        data = response.data[0]; //get the most recent
+        status = data.status;
+        appName = data.app.name;
+        description = data.description;
+        timestamp = data.updated_at;
+        version = data.version;
       }
 
       if (status === "succeeded" || status === "failed") {
-        core.setOutput("source-app-status", status);
+        core.setOutput(outputName, status);
+        const message = `[${timestamp}][version ${version}][${description}] ${appName} release status: ${status}`;
+        console.log(message);
+        core.setOutput("message", message);
       } else {
         if (retries > 0) {
           setTimeout(() => {
             return getLastHerokuReleaseStatus(retries - 1, timeout);
           }, timeout);
         } else {
-          core.setOutput("source-app-status", "RETRY MAXIMUM REACHED");
+          core.setOutput(outputName, "RETRY MAXIMUM REACHED");
+          const message = `[${timestamp}][version ${version}][${description}] ${appName} release status: MAXIMUM RETRY REACHED WHILE WAITING FOR STATUS.`;
+          console.log(message);
+          core.setOutput("message", message);
         }
       }
     })

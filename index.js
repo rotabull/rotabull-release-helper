@@ -68,7 +68,9 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
   axios
     .get(herokuReleaseURL, options)
     .then((response) => {
-      console.log("checking last release status for app" + retries + "...");
+      console.log(
+        "checking most recent release status for app" + retries + "..."
+      );
       var status = null,
         appName = null,
         description = null,
@@ -266,16 +268,12 @@ function createGithubRelease(collectedSHAs) {
     Chore: [],
   };
 
-  // for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
-  for (var i = 0, n = 1; i < n; ++i) {
+  for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
     promises.push(
-      // getPRDetails(collectedSHAs[i]).then((response) => {
-      getPRDetails("824250878f21545e4eff33fc5a3cfcd4d3b9afa3").then(
-        (response) => {
-          const { category, title, clubhouseNumber } = response;
-          saveToCollection(collection, category, title, clubhouseNumber);
-        }
-      )
+      getPRDetails(collectedSHAs[i]).then((response) => {
+        const { category, title, clubhouseNumber } = response;
+        saveToCollection(collection, category, title, clubhouseNumber);
+      })
     );
   }
 
@@ -295,10 +293,8 @@ function getPRDetails(commitSHA) {
   const options = getGithubAPIHeader(
     "application/vnd.github.groot-preview+json"
   );
-  console.log("debug2");
+
   const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}/pulls`;
-  // const getPRDetailsURl =
-  //   "https://api.github.com/repos/rotabull/rotabull/commits/824250878f21545e4eff33fc5a3cfcd4d3b9afa3/pulls";
   return axios
     .get(getPRDetailsURL, options)
     .then((response) => {
@@ -335,13 +331,11 @@ function getCommitDetail(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("debug commit detail:");
+      console.log("Getting Commit detail instead:");
 
       if (data && data.length !== 0) {
         const commitMessage = data.commit.message;
-        console.log("debug commit detail2:" + data.commit.message);
         const category = extractCategory(commitMessage);
-        console.log("category:" + category);
         const title = extractTitleIgnoringClubhouseNumber(commitMessage);
         const clubhouseNumber = extractClubhouseStoryNumber(
           commitMessage,

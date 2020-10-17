@@ -96,7 +96,11 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
       } else {
         if (retries > 0) {
           setTimeout(() => {
-            return getLastHerokuReleaseStatus(retries - 1, timeout);
+            return getLastHerokuReleaseStatus(
+              isSourceApp,
+              retries - 1,
+              timeout
+            );
           }, timeout);
         } else {
           core.setOutput(outputName, "RETRY MAXIMUM REACHED");
@@ -221,7 +225,10 @@ function getLastReleaseSHA() {
   return axios
     .get(getGithubTagsUrl, options)
     .then((response) => {
-      const lastTag = response.data === [] ? null : response.data[0].name;
+      const lastTag =
+        !response.data || response.data === [] || response.data.length === 0
+          ? null
+          : response.data[0].name;
       const lastReleaseSHA =
         response.data === [] ? null : response.data[0].commit.sha;
       console.log("Last Release SHA:" + lastReleaseSHA);
@@ -299,9 +306,8 @@ function getPRDetails(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("debug:");
       console.log(data);
-      if (data && data.length !== 0) {
+      if (data && data.length > 0) {
         const prTitle = data[0].title;
         const prBody = data[0].body;
         const branchName = data[0].head.ref;
@@ -324,7 +330,6 @@ function getCommitDetail(commitSHA) {
   const options = getGithubAPIHeader(
     "application/vnd.github.groot-preview+json"
   );
-  console.log("debug2");
   const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}`;
 
   return axios
@@ -333,7 +338,7 @@ function getCommitDetail(commitSHA) {
       var data = response.data;
       console.log("Getting Commit detail instead:");
 
-      if (data && data.length !== 0) {
+      if (data) {
         const commitMessage = data.commit.message;
         const category = extractCategory(commitMessage);
         const title = extractTitleIgnoringClubhouseNumber(commitMessage);
@@ -460,6 +465,7 @@ module.exports = {
   createGithubRelease: createGithubRelease,
   getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastReleaseSHA: getLastReleaseSHA,
+  getCommitDetail: getCommitDetail,
   getPRDetails: getPRDetails,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseStoryNumber: extractClubhouseStoryNumber,

@@ -20,6 +20,8 @@ var outputs = {
   "release-title": undefined,
   "release-tag": undefined,
   "source-app-status": undefined,
+  message: undefined,
+  "target-app-status": undefined,
 };
 
 describe("index.js", () => {
@@ -83,7 +85,8 @@ describe("index.js", () => {
   });
 
   describe("getLastHerokuReleaseStatus", () => {
-    test("calls the heroku release promotion status api", () => {
+    test("calls the heroku release promotion status api and checks on the source heroku app when flag is true", () => {
+      const isSourceAppFlag = true;
       const params = {
         headers: {
           Accept: "application/vnd.heroku+json; version=3",
@@ -96,17 +99,29 @@ describe("index.js", () => {
       const response1 = {
         data: [
           {
-            status: "succeeded",
+            status: "failed",
+            app: {
+              name: "Water Bottle",
+            },
+            description: "description1234",
+            updated_at: "20202-05-15",
+            version: "155",
           },
           {
             status: "succeeded",
+            app: {
+              name: "Water Bottle",
+            },
+            description: "description12345",
+            updated_at: "20202-05-15",
+            version: "154",
           },
         ],
       };
 
       axios.get.mockReturnValueOnce(Promise.resolve(response1));
 
-      main.getLastHerokuReleaseStatus(20, 60000);
+      main.getLastHerokuReleaseStatus(isSourceAppFlag, 20, 60000);
 
       expect(axios.get).toHaveBeenCalledTimes(1);
       expect(axios.get).toHaveBeenCalledWith(
@@ -115,7 +130,10 @@ describe("index.js", () => {
       );
 
       setImmediate(() => {
-        expect(outputs["source-app-status"]).toBe("succeeded");
+        expect(outputs["source-app-status"]).toBe("failed");
+        expect(outputs["message"]).toBe(
+          "[20202-05-15][version 155][description1234] Water Bottle release status: failed"
+        );
       });
     });
   });
@@ -244,7 +262,7 @@ describe("index.js", () => {
   });
 
   describe("getPRDetail", () => {
-    test("calls the commit pulls github api and returns categroy, title, and clubhouse number for a particular commit", () => {
+    test("when there is a pr associated with the commit, calls the github api to get the PR associated with a commit and returns categroy, title, and clubhouse number for a particular commit", () => {
       const options = {
         headers: {
           Accept: "application/vnd.github.groot-preview+json",
@@ -265,7 +283,6 @@ describe("index.js", () => {
           },
         ],
       };
-
       axios.get.mockImplementationOnce(() => Promise.resolve(response));
       const promise = main.getPRDetails("random-sha");
       expect(axios.get).toHaveBeenCalledWith(
@@ -277,6 +294,38 @@ describe("index.js", () => {
           category: "Bugfix",
           title: "Properly display/download attachments from an email quote",
           clubhouseNumber: "3681",
+        });
+      });
+    });
+  });
+
+  describe("getCommitDetail", () => {
+    test("calls the github api to retrieve a particular commit and returns categroy, title, and clubhouse number for a particular commit", () => {
+      const options = {
+        headers: {
+          Accept: "application/vnd.github.groot-preview+json",
+          "Content-Type": "application/json",
+          Authorization: `token some-random-token`,
+        },
+      };
+      const response = {
+        data: {
+          commit: {
+            message: "que sera sera",
+          },
+        },
+      };
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      const promise = main.getCommitDetail("random-sha");
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.github.com/repos/rotabull/rotabull/commits/random-sha",
+        options
+      );
+      return promise.then((res) => {
+        expect(res).toEqual({
+          category: "Chore",
+          title: "que sera sera",
+          clubhouseNumber: null,
         });
       });
     });

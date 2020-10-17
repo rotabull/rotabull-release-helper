@@ -1,7 +1,0 @@
-{
-  "name": "Automated Release Helper",
-  "description": "This app does little things, and does them well.",
-  "scripts": {
-    "postdeploy": "./postdeploy.sh"
-  }
-}

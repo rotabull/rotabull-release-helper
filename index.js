@@ -25,7 +25,6 @@ async function run() {
       });
     } else if (actionType === "promote") {
       promoteOnHeroku().then((id) => {
-        console.log("Promotion ID is set to " + id);
         checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
       });
     } else if (actionType === "source-release-status") {
@@ -69,7 +68,7 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
     .get(herokuReleaseURL, options)
     .then((response) => {
       console.log(
-        "checking most recent release status for app" + retries + "..."
+        "Checking most recent release status for app " + retries + "..."
       );
       var status = null,
         appName = null,
@@ -149,11 +148,9 @@ function promoteOnHeroku() {
   return axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
-      console.log("Promote to pipeline response: ");
-      console.log(response.data);
       pipelinePromotionID = response.data.id;
       console.log(
-        "Pipeline promotion is created. Pipeline Promotion ID:" +
+        "Pipeline promotion is created. Pipeline Promotion ID: " +
           pipelinePromotionID
       );
       return pipelinePromotionID;
@@ -177,8 +174,7 @@ function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
   axios
     .get(checkPromotionStatusURL, options)
     .then((response) => {
-      console.log("checking promotion status " + retries + ":");
-      console.log(response.data);
+      console.log("Checking promotion status " + retries);
       const status = response.data.status;
       if (
         status === "succeeded" ||
@@ -250,7 +246,7 @@ function collectNewCommitSHAs(lastReleaseSHA) {
   const options = getGithubAPIHeader("application/vnd.github.v3+json");
   const getGithubCommitsURl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits`;
   var collectedSHAs = [];
-  console.log("last commit sha is " + lastReleaseSHA);
+  console.log("Last commit sha is " + lastReleaseSHA);
   return axios
     .get(getGithubCommitsURl, options)
     .then((response) => {
@@ -291,7 +287,6 @@ function createGithubRelease(collectedSHAs) {
       core.setOutput("release-body", releaseBody);
     })
     .catch((error) => {
-      console.log("something wrong");
       console.log(error);
     });
 }
@@ -306,7 +301,8 @@ function getPRDetails(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log(data);
+      console.log("Getting PR detail associated with the commit...");
+
       if (data && data.length > 0) {
         const prTitle = data[0].title;
         const prBody = data[0].body;
@@ -336,7 +332,7 @@ function getCommitDetail(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("Getting Commit detail instead:");
+      console.log("No associated PR found. Getting Commit detail instead...");
 
       if (data) {
         const commitMessage = data.commit.message;

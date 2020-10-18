@@ -7,11 +7,11 @@ const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
-const newLine = "\r\n";
 const PROMOTE_RETRIES = 10;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
+const newLine = "\r\n";
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -25,11 +25,20 @@ async function run() {
       });
     } else if (actionType === "promote") {
       promoteOnHeroku().then((id) => {
-        console.log("Promotion ID is set to " + id);
         checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
       });
-    } else if (actionType === "check-status") {
-      getLastHerokuReleaseStatus(CHECK_STATUS_RETRIES, CHECK_STATUS_TIME_OUT);
+    } else if (actionType === "source-release-status") {
+      getLastHerokuReleaseStatus(
+        true,
+        CHECK_STATUS_RETRIES,
+        CHECK_STATUS_TIME_OUT
+      );
+    } else if (actionType === "target-release-status") {
+      getLastHerokuReleaseStatus(
+        false,
+        CHECK_STATUS_RETRIES,
+        CHECK_STATUS_TIME_OUT
+      );
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -38,11 +47,14 @@ async function run() {
 
 run();
 
-function getLastHerokuReleaseStatus(retries, timeout) {
-  const SOURCE_APP_ID = core.getInput("source-app-id");
+function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
+  const appId = isSourceApp
+    ? core.getInput("source-app-id")
+    : core.getInput("target-app-id");
+  const outputName = isSourceApp ? "source-app-status" : "target-app-status";
   const HEROKU_API_KEY = core.getInput("heroku-api-key");
 
-  const herokuReleaseURL = `${HEROKU_API_BASE_URL}/apps/${SOURCE_APP_ID}/releases`;
+  const herokuReleaseURL = `${HEROKU_API_BASE_URL}/apps/${appId}/releases`;
   const options = {
     headers: {
       Accept: "application/vnd.heroku+json; version=3",
@@ -56,26 +68,44 @@ function getLastHerokuReleaseStatus(retries, timeout) {
     .get(herokuReleaseURL, options)
     .then((response) => {
       console.log(
-        "checking last release status for source app " + retries + "..."
+        "Checking most recent release status for app " + retries + "..."
       );
-      var status = null;
+      var status = null,
+        appName = null,
+        description = null,
+        timestamp = null,
+        version = null;
 
-      if (response.data === []) {
+      if (response.data && response.data.length === 0) {
         status = "succeeded";
       } else {
-        console.log(response.data[0]);
-        status = response.data[0].status; //get the most recent
+        data = response.data[0]; //get the most recent
+        status = data.status;
+        appName = data.app.name;
+        description = data.description;
+        timestamp = data.updated_at;
+        version = data.version;
       }
 
       if (status === "succeeded" || status === "failed") {
-        core.setOutput("source-app-status", status);
+        core.setOutput(outputName, status);
+        const message = `[${timestamp}][version ${version}][${description}] ${appName} release status: ${status}`;
+        console.log(message);
+        core.setOutput("message", message);
       } else {
         if (retries > 0) {
           setTimeout(() => {
-            return getLastHerokuReleaseStatus(retries - 1, timeout);
+            return getLastHerokuReleaseStatus(
+              isSourceApp,
+              retries - 1,
+              timeout
+            );
           }, timeout);
         } else {
-          core.setOutput("source-app-status", "RETRY MAXIMUM REACHED");
+          core.setOutput(outputName, "RETRY MAXIMUM REACHED");
+          const message = `[${timestamp}][version ${version}][${description}] ${appName} release status: MAXIMUM RETRY REACHED WHILE WAITING FOR STATUS.`;
+          console.log(message);
+          core.setOutput("message", message);
         }
       }
     })
@@ -118,11 +148,9 @@ function promoteOnHeroku() {
   return axios
     .post(herokuPromoteURL, data, options)
     .then((response) => {
-      console.log("Promote to pipeline response: ");
-      console.log(response.data);
       pipelinePromotionID = response.data.id;
       console.log(
-        "Pipeline promotion is created. Pipeline Promotion ID:" +
+        "Pipeline promotion is created. Pipeline Promotion ID: " +
           pipelinePromotionID
       );
       return pipelinePromotionID;
@@ -146,8 +174,7 @@ function checkPromotionStatus(pipelinePromotionID, retries, timeout) {
   axios
     .get(checkPromotionStatusURL, options)
     .then((response) => {
-      console.log("checking promotion status " + retries + ":");
-      console.log(response.data);
+      console.log("Checking promotion status " + retries);
       const status = response.data.status;
       if (
         status === "succeeded" ||
@@ -194,7 +221,10 @@ function getLastReleaseSHA() {
   return axios
     .get(getGithubTagsUrl, options)
     .then((response) => {
-      const lastTag = response.data === [] ? null : response.data[0].name;
+      const lastTag =
+        !response.data || response.data === [] || response.data.length === 0
+          ? null
+          : response.data[0].name;
       const lastReleaseSHA =
         response.data === [] ? null : response.data[0].commit.sha;
       console.log("Last Release SHA:" + lastReleaseSHA);
@@ -216,7 +246,7 @@ function collectNewCommitSHAs(lastReleaseSHA) {
   const options = getGithubAPIHeader("application/vnd.github.v3+json");
   const getGithubCommitsURl = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits`;
   var collectedSHAs = [];
-  console.log("last commit sha is " + lastReleaseSHA);
+  console.log("Last commit sha is " + lastReleaseSHA);
   return axios
     .get(getGithubCommitsURl, options)
     .then((response) => {
@@ -250,23 +280,30 @@ function createGithubRelease(collectedSHAs) {
     );
   }
 
-  Promise.all(promises).then(() => {
-    const releaseBody = composeReleaseBody(collection);
-    console.log("Release body will be: " + releaseBody);
-    core.setOutput("release-body", releaseBody);
-  });
+  Promise.all(promises)
+    .then(() => {
+      const releaseBody = composeReleaseBody(collection);
+      console.log("Release body will be: " + releaseBody);
+      core.setOutput("release-body", releaseBody);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 }
 
 function getPRDetails(commitSHA) {
   const options = getGithubAPIHeader(
     "application/vnd.github.groot-preview+json"
   );
+
   const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}/pulls`;
   return axios
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      if (data !== []) {
+      console.log("Getting PR detail associated with the commit...");
+
+      if (data && data.length > 0) {
         const prTitle = data[0].title;
         const prBody = data[0].body;
         const branchName = data[0].head.ref;
@@ -274,6 +311,37 @@ function getPRDetails(commitSHA) {
         const category = extractCategory(branchName);
         const title = extractTitleIgnoringClubhouseNumber(prTitle);
         const clubhouseNumber = extractClubhouseStoryNumber(prTitle, prBody);
+
+        return { category, title, clubhouseNumber };
+      } else {
+        return getCommitDetail(commitSHA);
+      }
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+}
+
+function getCommitDetail(commitSHA) {
+  const options = getGithubAPIHeader(
+    "application/vnd.github.groot-preview+json"
+  );
+  const getPRDetailsURL = `${GITHUB_API_BASE_URL}/repos/${OWNER}/${REPO}/commits/${commitSHA}`;
+
+  return axios
+    .get(getPRDetailsURL, options)
+    .then((response) => {
+      var data = response.data;
+      console.log("No associated PR found. Getting Commit detail instead...");
+
+      if (data) {
+        const commitMessage = data.commit.message;
+        const category = extractCategory(commitMessage);
+        const title = extractTitleIgnoringClubhouseNumber(commitMessage);
+        const clubhouseNumber = extractClubhouseStoryNumber(
+          commitMessage,
+          commitMessage
+        );
 
         return { category, title, clubhouseNumber };
       }
@@ -393,6 +461,7 @@ module.exports = {
   createGithubRelease: createGithubRelease,
   getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastReleaseSHA: getLastReleaseSHA,
+  getCommitDetail: getCommitDetail,
   getPRDetails: getPRDetails,
   extractAllClubhouseNumbersFromLastRelease: extractAllClubhouseNumbersFromLastRelease,
   extractClubhouseStoryNumber: extractClubhouseStoryNumber,

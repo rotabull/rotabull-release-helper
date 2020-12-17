@@ -1,3 +1,6 @@
+const fs = require('fs');
+const { Octokit } = require("@octokit/core");
+const Clubhouse = require("clubhouse-lib");
 const core = require("@actions/core");
 const axios = require("axios").default;
 const moment = require("moment");
@@ -13,10 +16,18 @@ const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
 const newLine = "\r\n";
 
+const GITHUB_TOKEN = core.getInput("github-token");
+const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token");
+
+const clubhouseClient = Clubhouse.create(CLUBHOUSE_TOKEN);
+const octokit = new Octokit({ auth: GITHUB_TOKEN });
+
 async function run() {
   let actionType = core.getInput("action-type");
 
   try {
+    await acceptanceChecker();
+
     if (actionType === "release") {
       getLastReleaseSHA().then((lastReleaseSHA) => {
         collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
@@ -46,6 +57,61 @@ async function run() {
 }
 
 run();
+
+const event = fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8');
+
+const getCHStory = async (storyID) => {
+  const story = await clubhouseClient.getStory(storyID);
+
+  return story;
+};
+
+const getPR = async (prNumber) => {
+  const pr = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
+    owner: 'rotabull',
+    repo: 'rotabull',
+    pull_number: prNumber,
+  });
+
+  return pr;
+};
+
+const postStatus = async ({ sha, state, description }) => {
+  const pr = await octokit.request('POST /repos/{owner}/{repo}/statuses/{sha}', {
+    owner: 'rotabull',
+    repo: 'rotabull',
+    sha,
+    description,
+    state,
+  });
+
+  return pr;
+};
+
+const CH = {
+  LABELS: {
+    ACCEPTED: "Accepted",
+  },
+};
+
+const acceptanceChecker = async () => {
+  const PR_NUMBER = event.pull_request.number;
+  const { data: { pr } } = await getPR(PR_NUMBER);
+  const chTitle = pr.title.match(/\[ch[0-9]+\]/g);
+
+  if (!chTitle) {
+    return postStatus({ description: "Can't find Clubhouse story ID in PR title", state: "failure", sha: process.env.GITHUB_SHA });
+  }
+
+  const storyID = chTitle[0].replace( /\D/g, '');
+  const story = await getCHStory(storyID);
+
+  if (!story.labels.find((label) => label.name === CH.LABELS.ACCEPTED)) {
+    postStatus({ description: "Not accepted yet", state: "failure", sha: process.env.GITHUB_SHA });
+  } else {
+    postStatus({ description: "Good, accepted", state: "success", sha: process.env.GITHUB_SHA });
+  }
+};
 
 function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
   const appId = isSourceApp

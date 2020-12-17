@@ -4,6 +4,9 @@ inputs:
   github-token:
     description: "github token"
     required: true
+  clubhouse-token:
+    description: "clubhouse API token"
+    required: true
   action-type:
     description: "promote or release or source-release-status or target-release-status"
     required: true

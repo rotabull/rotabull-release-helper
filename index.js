@@ -1,6 +1,8 @@
+const fs = require('fs');
 const core = require("@actions/core");
 const axios = require("axios").default;
 const moment = require("moment");
+const checkers = require("./lib/checkers");
 
 const REPO = "rotabull";
 const OWNER = "rotabull";
@@ -13,10 +15,19 @@ const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
 const newLine = "\r\n";
 
+const GITHUB_TOKEN = core.getInput("github-token");
+const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token");
+
+const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+
 async function run() {
   let actionType = core.getInput("action-type");
 
   try {
+    if (event.number) {
+      await checkers.clubhouseAcceptance(event.number, GITHUB_TOKEN, CLUBHOUSE_TOKEN);
+    }
+
     if (actionType === "release") {
       getLastReleaseSHA().then((lastReleaseSHA) => {
         collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
@@ -41,6 +52,8 @@ async function run() {
       );
     }
   } catch (error) {
+    console.log(error.stack);
+
     core.setFailed(error.message);
   }
 }

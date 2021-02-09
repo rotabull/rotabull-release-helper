@@ -81,7 +81,6 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
       } else {
         
         data = response.data[0]; //get the most recent
-        console.log(data);
         status = data.status;
         appName = data.app.name;
         description = data.description;

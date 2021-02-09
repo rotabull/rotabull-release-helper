@@ -284,7 +284,8 @@ function createGithubRelease(collectedSHAs) {
 
   Promise.all(promises)
     .then(() => {
-      const releaseBody = composeReleaseBody(collection);
+      var releaseBody = composeReleaseBody(collection);
+      releaseBody = releaseBody.replace(/"/g, '\\"');
       console.log("Release body will be: " + releaseBody);
       core.setOutput("release-body", releaseBody);
     })

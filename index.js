@@ -65,10 +65,10 @@ function getClubhouseWorkFlowId(){
   };
   return axios.get(URL, options).then((response) =>{
     if(response.data !== []){
-      console.log(response.data);
-      console.log(response.data.states);
+
       const workflow= response.data.find(workflow => workflow.name === "Engineering");
       const deployedState = workflow.states.find(state => state.name === "Deployed");
+      console.log(workflow.states);
       return deployedState.id;
     }
   }).catch((error) => {
@@ -96,7 +96,7 @@ function updateMultipleStories(stateId, storyIdsString){
   }
 
   axios.put(URL, data, options).then(() =>{
-    console.log(`Clubhouse stories ${storyI} have been moved to Deployed.`);
+    console.log(`Clubhouse stories ${storyIds} have been moved to Deployed.`);
     
   }).catch((error) => {
     console.log(error);
@@ -524,6 +524,8 @@ module.exports = {
   checkPromotionStatus: checkPromotionStatus,
   collectNewCommitSHAs: collectNewCommitSHAs,
   createGithubRelease: createGithubRelease,
+  getClubhouseWorkFlowId: getClubhouseWorkFlowId,
+  updateMultipleStories: updateMultipleStories,
   getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastReleaseSHA: getLastReleaseSHA,
   getCommitDetail: getCommitDetail,

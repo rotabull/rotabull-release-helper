@@ -7,7 +7,7 @@ const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
-const CLUBHOUSE_API_BASE_URL = "https://api.clubhouse.io/";
+const CLUBHOUSE_API_BASE_URL = "https://api.clubhouse.io/api/v3/";
 const PROMOTE_RETRIES = 10;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
@@ -40,6 +40,8 @@ async function run() {
         CHECK_STATUS_RETRIES,
         CHECK_STATUS_TIME_OUT
       );
+    } else if (actionType === "update-clubhouse-workflow"){
+      getClubhouseWorkFlowId();
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -48,6 +50,21 @@ async function run() {
 
 run();
 
+function getClubhouseWorkFlowId(){
+  const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Clubhouse-Token ${HEROKU_API_KEY}`,
+    },
+  };
+
+  axios.get(URL, options).then((response) =>{
+    console.log(response);
+  }).catch((error) => {
+    console.log(error);
+  })
+}
 function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
   const appId = isSourceApp
     ? core.getInput("source-app-id")

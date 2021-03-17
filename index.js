@@ -56,7 +56,7 @@ function getClubhouseWorkFlowId(){
   const options = {
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Clubhouse-Token ${CLUBHOUSE_TOKEN}`,
+      "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
     },
   };
 

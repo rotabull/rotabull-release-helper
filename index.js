@@ -44,7 +44,7 @@ async function run() {
       const storyIds = core.getInput("clubhouse-story-ids");
       console.log(storyIds);
       getClubhouseWorkFlowId().then((stateId) => {
-        if(storyIds!==[]) updateMultipleStories(stateId, storyIds);
+        if(storyIds!=="") updateMultipleStories(stateId, storyIds);
       });
     }
   } catch (error) {
@@ -74,8 +74,8 @@ function getClubhouseWorkFlowId(){
   })
 }
 
-// storyIds needs to be an array of integers
-function updateMultipleStories(stateId, storyIds){
+
+function updateMultipleStories(stateId, storyIdsString){
   const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
   const URL = `${CLUBHOUSE_API_BASE_URL}/stories/bulk`;
   const options = {
@@ -84,6 +84,10 @@ function updateMultipleStories(stateId, storyIds){
       "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
     },
   };
+
+  // storyIds needs to be an array of integers
+  const storyIds = storyIdsString.split(",").map(id => parseInt(id));
+
   const data = {
     story_ids: storyIds,
     workflow_state_id: stateId
@@ -320,7 +324,7 @@ function createGithubRelease(collectedSHAs) {
     Bugfix: [],
     Chore: [],
   };
-  let clubhouseIds = [];
+  let clubhouseIds = "";
 
   for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
     promises.push(
@@ -328,7 +332,10 @@ function createGithubRelease(collectedSHAs) {
         const { category, title, clubhouseNumber } = response;
         saveToCollection(collection, category, title, clubhouseNumber);
         if(clubhouseNumber && clubhouseNumber.trim() !== ""){
-          clubhouseIds.push(parseInt(clubhouseNumber));
+          if (clubhouseIds !== ""){
+            clubhouseIds += ",";
+          }
+          clubhouseIds += clubhouseNumber;
         }
       })
     );

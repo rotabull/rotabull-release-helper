@@ -51,11 +51,12 @@ async function run() {
 run();
 
 function getClubhouseWorkFlowId(){
+  const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
   const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
   const options = {
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Clubhouse-Token ${HEROKU_API_KEY}`,
+      Authorization: `Clubhouse-Token ${CLUBHOUSE_TOKEN}`,
     },
   };
 

@@ -89,7 +89,7 @@ function updateMultipleStories(stateId, storyIdsString){
   const storyIds = storyIdsString.split(",").map(id => parseInt(id));
 
   const data = {
-    story_ids: [10000],
+    story_ids: [8331, 10000],
     workflow_state_id: stateId
   }
 

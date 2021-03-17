@@ -8,7 +8,7 @@ const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
 const CLUBHOUSE_API_BASE_URL = "https://api.clubhouse.io/api/v3";
-const PROMOTE_RETRIES = 10;
+const PROMOTE_RETRIES = 20;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
@@ -68,7 +68,6 @@ function getClubhouseWorkFlowId(){
 
       const workflow= response.data.find(workflow => workflow.name === "Engineering");
       const deployedState = workflow.states.find(state => state.name === "Deployed");
-      console.log(workflow.states);
       return deployedState.id;
     }
   }).catch((error) => {
@@ -123,7 +122,7 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
     .get(herokuReleaseURL, options)
     .then((response) => {
       console.log(
-        "Checking most recent release status for app " + retries + "..."
+        "Checking most recent release status for app #" + retries + "..."
       );
       var status = null,
         appName = null,
@@ -205,10 +204,6 @@ function promoteOnHeroku() {
     .post(herokuPromoteURL, data, options)
     .then((response) => {
       pipelinePromotionID = response.data.id;
-      console.log(
-        "Pipeline promotion is created. Pipeline Promotion ID: " +
-          pipelinePromotionID
-      );
       return pipelinePromotionID;
     })
     .catch((error) => {
@@ -311,7 +306,6 @@ function collectNewCommitSHAs(lastReleaseSHA) {
         if (data[i].sha === lastReleaseSHA) break;
         collectedSHAs[collectedSHAs.length] = data[i].sha;
       }
-      console.log("CollectedSHAs are:" + collectedSHAs);
       return collectedSHAs;
     })
     .catch((error) => {
@@ -366,7 +360,7 @@ function getPRDetails(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("Getting PR detail associated with the commit...");
+      console.log("Getting PR detail associated with the commit.");
 
       if (data && data.length > 0) {
         const prTitle = data[0].title;
@@ -397,7 +391,7 @@ function getCommitDetail(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("No associated PR found. Getting Commit detail instead...");
+      console.log("No associated PR found. Getting Commit detail instead.");
 
       if (data) {
         const commitMessage = data.commit.message;

@@ -13,7 +13,7 @@ var inputs = {
   "target-app-id": "production12345",
   "github-token": "some-random-token",
   "clubhouse-token": "some-ch-token",
-  "clubhouse-token": ""
+  "clubhouse-story-ids": ""
 };
 
 var outputs = {
@@ -37,6 +37,13 @@ describe("index.js", () => {
       outputs[name] = value;
     });
   });
+
+  beforeEach(() => {
+    jest.mock("axios");
+  })
+  afterEach(() => {
+    jest.clearAllMocks();
+  })
 
   describe("promoteOnHeroku", () => {
     test("calls the heroku pipeline promotion api and returns the promotion id", () => {
@@ -73,7 +80,7 @@ describe("index.js", () => {
       axios.post.mockImplementationOnce(() => Promise.resolve(response));
 
       const herokuPromotionID = main.promoteOnHeroku();
-
+      expect(axios.post).toHaveBeenCalledTimes(1);
       expect(axios.post).toHaveBeenCalledWith(
         "https://api.heroku.com/pipeline-promotions",
         expectedPayload,
@@ -158,6 +165,7 @@ describe("index.js", () => {
 
       axios.get.mockImplementationOnce(() => Promise.resolve(response));
       main.checkPromotionStatus("1234", 1, 10000);
+
       expect(axios.get).toHaveBeenCalledWith(
         "https://api.heroku.com/pipeline-promotions/1234",
         params
@@ -541,5 +549,94 @@ describe("index.js", () => {
 
       expect(nextReleaseTag).toBe(`v${todayDate}.3`);
     });
+  });
+
+
+  describe ("getClubhouseWorkFlowId", ()=> {
+    test("calls the clubhouse workflow api and returns the Engineering workflow id", () =>{
+      const params = {
+        headers: {
+          "Content-Type": "application/json",
+          "Clubhouse-Token": "some-ch-token"
+        },
+      };
+      const response = {
+        data: [
+          {
+            id: 1111111,
+            name: "Engineering",
+            states:[
+              {
+                description: 'Merged to master and waiting on deployment',
+                name: 'Merged',
+                id: 123456,
+              },
+              {
+                description: 'Stories that have been deployed to production as part of a release',
+                name: 'Deployed',
+                id: 54321            
+              }
+            ]
+          },
+          {
+            id: 2222222,
+            name: "Design",
+            states:[
+              {
+                description: 'Merged to master and waiting on deployment',
+                name: 'Merged',
+                id: 999999,
+              },
+              {
+                description: 'Stories that have been deployed to production as part of a release',
+                name: 'Deployed',
+                id: 888888           
+              }
+            ]
+          }
+        
+        ],
+      };
+
+      axios.get.mockImplementationOnce(() => Promise.resolve(response));
+      const workFlowId = main.getClubhouseWorkFlowId();
+
+      expect(axios.get).toHaveBeenCalledWith(
+        "https://api.clubhouse.io/api/v3/workflows",
+        params
+      );
+
+      return workFlowId.then((id) => {
+        expect(id).toBe(54321);
+      });
+    })
+  });
+
+  describe ("updateMultipleStories", ()=> {
+    test("calls the clubhouse bulk update api ", () =>{
+      const params = {
+        headers: {
+          "Content-Type": "application/json",
+          "Clubhouse-Token": "some-ch-token"
+        },
+      };
+
+      const payload = {
+        story_ids: [8993,6456],
+        workflow_state_id: 123
+      }
+      const response = {
+        data: []
+      };
+
+      axios.put.mockReturnValueOnce(Promise.resolve(response));
+      main.updateMultipleStories(123, "8993,6456");
+
+      expect(axios.put).toHaveBeenCalledWith(
+        "https://api.clubhouse.io/api/v3/stories/bulk",
+        payload,
+        params
+      );
+    })
   });
 });

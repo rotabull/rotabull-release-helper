@@ -62,6 +62,11 @@ function getClubhouseWorkFlowId(){
 
   axios.get(URL, options).then((response) =>{
     console.log(response);
+    if(response.data !== []){
+      const workflow= response.data.find(workflow => workflow.name === "Engineering");
+      console.log(workflow);
+      console.log(workflow.states)
+    }
   }).catch((error) => {
     console.log(error);
   })

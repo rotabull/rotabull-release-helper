@@ -63,12 +63,11 @@ function getClubhouseWorkFlowId(){
       "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
     },
   };
-  axios.get(URL, options).then((response) =>{
+  return axios.get(URL, options).then((response) =>{
     if(response.data !== []){
       const workflow= response.data.find(workflow => workflow.name === "Engineering");
       const deployedState = workflow.states.find(state => state.name === "Deployed");
       return deployedState.id;
-
     }
   }).catch((error) => {
     console.log(error);

@@ -41,7 +41,8 @@ async function run() {
         CHECK_STATUS_TIME_OUT
       );
     } else if (actionType === "update-clubhouse-workflow"){
-      getClubhouseWorkFlowId();
+      // getClubhouseWorkFlowId();
+      updateMultipleStories();
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -50,23 +51,47 @@ async function run() {
 
 run();
 
-function getClubhouseWorkFlowId(){
+// function getClubhouseWorkFlowId(){
+//   const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
+//   const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
+//   const options = {
+//     headers: {
+//       "Content-Type": "application/json",
+//       "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
+//     },
+//   };
+
+//   axios.get(URL, options).then((response) =>{
+//     console.log(response);
+//     if(response.data !== []){
+//       const workflow= response.data.find(workflow => workflow.name === "Engineering");
+//       console.log(workflow);
+//       console.log(workflow.states)
+//       const deployedState = workflow.states.find(state => state.name === "Deployed");
+
+//     }
+//   }).catch((error) => {
+//     console.log(error);
+//   })
+// }
+
+function updateMultipleStories(){
   const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
-  const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
+  const URL = `${CLUBHOUSE_API_BASE_URL}/stories/bulk`;
   const options = {
     headers: {
       "Content-Type": "application/json",
       "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
     },
   };
+  const data = {
+    story_ids: [9245],
+    move_to: "last"
+  }
 
-  axios.get(URL, options).then((response) =>{
+  axios.put(URL, data, options).then((response) =>{
     console.log(response);
-    if(response.data !== []){
-      const workflow= response.data.find(workflow => workflow.name === "Engineering");
-      console.log(workflow);
-      console.log(workflow.states)
-    }
+    
   }).catch((error) => {
     console.log(error);
   })

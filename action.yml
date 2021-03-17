@@ -19,6 +19,9 @@ inputs:
   target-app-id:
     description: "Heroku Target APP ID"
     required: true
+  clubhouse-token:
+    description: "clubhouse token"
+    required: true
 outputs:
   release-title:
     description: "Release title"

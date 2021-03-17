@@ -41,8 +41,11 @@ async function run() {
         CHECK_STATUS_TIME_OUT
       );
     } else if (actionType === "update-clubhouse-workflow"){
-      // getClubhouseWorkFlowId();
-      updateMultipleStories();
+      const storyIds = core.getInput("clubhouse-story-ids");
+      console.log(storyIds);
+      getClubhouseWorkFlowId().then((stateId) => {
+        if(storyIds!==[]) updateMultipleStories(stateId, storyIds);
+      });
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -51,31 +54,29 @@ async function run() {
 
 run();
 
-// function getClubhouseWorkFlowId(){
-//   const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
-//   const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
-//   const options = {
-//     headers: {
-//       "Content-Type": "application/json",
-//       "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
-//     },
-//   };
+function getClubhouseWorkFlowId(){
+  const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
+  const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
+    },
+  };
+  axios.get(URL, options).then((response) =>{
+    if(response.data !== []){
+      const workflow= response.data.find(workflow => workflow.name === "Engineering");
+      const deployedState = workflow.states.find(state => state.name === "Deployed");
+      return deployedState.id;
 
-//   axios.get(URL, options).then((response) =>{
-//     console.log(response);
-//     if(response.data !== []){
-//       const workflow= response.data.find(workflow => workflow.name === "Engineering");
-//       console.log(workflow);
-//       console.log(workflow.states)
-//       const deployedState = workflow.states.find(state => state.name === "Deployed");
+    }
+  }).catch((error) => {
+    console.log(error);
+  })
+}
 
-//     }
-//   }).catch((error) => {
-//     console.log(error);
-//   })
-// }
-
-function updateMultipleStories(){
+// storyIds needs to be an array of integers
+function updateMultipleStories(stateId, storyIds){
   const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
   const URL = `${CLUBHOUSE_API_BASE_URL}/stories/bulk`;
   const options = {
@@ -85,12 +86,12 @@ function updateMultipleStories(){
     },
   };
   const data = {
-    story_ids: [9245],
-    move_to: "last"
+    story_ids: storyIds,
+    workflow_state_id: stateId
   }
 
   axios.put(URL, data, options).then((response) =>{
-    console.log(response);
+    console.log(response.data);
     
   }).catch((error) => {
     console.log(error);
@@ -320,12 +321,16 @@ function createGithubRelease(collectedSHAs) {
     Bugfix: [],
     Chore: [],
   };
+  let clubhouseIds = [];
 
   for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
     promises.push(
       getPRDetails(collectedSHAs[i]).then((response) => {
         const { category, title, clubhouseNumber } = response;
         saveToCollection(collection, category, title, clubhouseNumber);
+        if(clubhouseNumber && clubhouseNumber.trim() !== ""){
+          clubhouseIds.push(parseInt(clubhouseNumber));
+        }
       })
     );
   }
@@ -336,6 +341,7 @@ function createGithubRelease(collectedSHAs) {
       releaseBody = releaseBody.replace(/"/g, '\\"');
       console.log("Release body will be: " + releaseBody);
       core.setOutput("release-body", releaseBody);
+      core.setOutput("clubhouse-story-ids", clubhouseIds);
     })
     .catch((error) => {
       console.log(error);

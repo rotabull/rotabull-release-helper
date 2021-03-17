@@ -12,6 +12,8 @@ var inputs = {
   "source-app-id": "staging1234",
   "target-app-id": "production12345",
   "github-token": "some-random-token",
+  "clubhouse-token": "some-ch-token",
+  "clubhouse-token": ""
 };
 
 var outputs = {
@@ -22,6 +24,7 @@ var outputs = {
   "source-app-status": undefined,
   message: undefined,
   "target-app-status": undefined,
+  "clubhouse-story-ids": undefined
 };
 
 describe("index.js", () => {

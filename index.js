@@ -65,6 +65,8 @@ function getClubhouseWorkFlowId(){
   };
   return axios.get(URL, options).then((response) =>{
     if(response.data !== []){
+      console.log(response.data);
+      console.log(response.data.states);
       const workflow= response.data.find(workflow => workflow.name === "Engineering");
       const deployedState = workflow.states.find(state => state.name === "Deployed");
       return deployedState.id;
@@ -87,14 +89,14 @@ function updateMultipleStories(stateId, storyIdsString){
 
   // storyIds needs to be an array of integers
   const storyIds = storyIdsString.split(",").map(id => parseInt(id));
-
+  
   const data = {
-    story_ids: [8331, 10000],
+    story_ids: storyIds,
     workflow_state_id: stateId
   }
 
-  axios.put(URL, data, options).then((response) =>{
-    console.log(response.data);
+  axios.put(URL, data, options).then(() =>{
+    console.log(`Clubhouse stories ${storyI} have been moved to Deployed.`);
     
   }).catch((error) => {
     console.log(error);

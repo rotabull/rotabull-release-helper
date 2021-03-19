@@ -18,34 +18,36 @@ async function run() {
   let actionType = core.getInput("action-type");
 
   try {
-    if (actionType === "release") {
-      getLastReleaseSHA().then((lastReleaseSHA) => {
-        collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
-          createGithubRelease(newPrSHAs);
+    switch(actionType){
+      case "release":
+        getLastReleaseSHA().then((lastReleaseSHA) => {
+          collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
+            createGithubRelease(newPrSHAs);
+          });
         });
-      });
-    } else if (actionType === "promote") {
-      promoteOnHeroku().then((id) => {
-        checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
-      });
-    } else if (actionType === "source-release-status") {
-      getLastHerokuReleaseStatus(
-        true,
-        CHECK_STATUS_RETRIES,
-        CHECK_STATUS_TIME_OUT
-      );
-    } else if (actionType === "target-release-status") {
-      getLastHerokuReleaseStatus(
-        false,
-        CHECK_STATUS_RETRIES,
-        CHECK_STATUS_TIME_OUT
-      );
-    } else if (actionType === "update-clubhouse-workflow"){
-      const storyIds = core.getInput("clubhouse-story-ids");
-      console.log(storyIds);
-      getClubhouseWorkFlowId().then((stateId) => {
-        if(storyIds!=="") updateMultipleStories(stateId, storyIds);
-      });
+      case "promote":
+        promoteOnHeroku().then((id) => {
+          checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
+        });
+      case "source-release-status":
+        getLastHerokuReleaseStatus(
+          true,
+          CHECK_STATUS_RETRIES,
+          CHECK_STATUS_TIME_OUT
+        );
+      case "target-release-status":
+        getLastHerokuReleaseStatus(
+          false,
+          CHECK_STATUS_RETRIES,
+          CHECK_STATUS_TIME_OUT
+        );
+      case "update-clubhouse-workflow":
+        const storyIds = core.getInput("clubhouse-story-ids");
+        console.log(storyIds);
+        getClubhouseWorkFlowId().then((stateId) => {
+          if(storyIds!=="") updateMultipleStories(stateId, storyIds);
+        });
+      default: break;
     }
   } catch (error) {
     core.setFailed(error.message);

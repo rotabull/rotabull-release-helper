@@ -7,7 +7,8 @@ const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
-const PROMOTE_RETRIES = 10;
+const CLUBHOUSE_API_BASE_URL = "https://api.clubhouse.io/api/v3";
+const PROMOTE_RETRIES = 20;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
@@ -17,28 +18,36 @@ async function run() {
   let actionType = core.getInput("action-type");
 
   try {
-    if (actionType === "release") {
-      getLastReleaseSHA().then((lastReleaseSHA) => {
-        collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
-          createGithubRelease(newPrSHAs);
+    switch(actionType){
+      case "release":
+        getLastReleaseSHA().then((lastReleaseSHA) => {
+          collectNewCommitSHAs(lastReleaseSHA).then((newPrSHAs) => {
+            createGithubRelease(newPrSHAs);
+          });
         });
-      });
-    } else if (actionType === "promote") {
-      promoteOnHeroku().then((id) => {
-        checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
-      });
-    } else if (actionType === "source-release-status") {
-      getLastHerokuReleaseStatus(
-        true,
-        CHECK_STATUS_RETRIES,
-        CHECK_STATUS_TIME_OUT
-      );
-    } else if (actionType === "target-release-status") {
-      getLastHerokuReleaseStatus(
-        false,
-        CHECK_STATUS_RETRIES,
-        CHECK_STATUS_TIME_OUT
-      );
+      case "promote":
+        promoteOnHeroku().then((id) => {
+          checkPromotionStatus(id, PROMOTE_RETRIES, PROMOTE_TIME_OUT);
+        });
+      case "source-release-status":
+        getLastHerokuReleaseStatus(
+          true,
+          CHECK_STATUS_RETRIES,
+          CHECK_STATUS_TIME_OUT
+        );
+      case "target-release-status":
+        getLastHerokuReleaseStatus(
+          false,
+          CHECK_STATUS_RETRIES,
+          CHECK_STATUS_TIME_OUT
+        );
+      case "update-clubhouse-workflow":
+        const storyIds = core.getInput("clubhouse-story-ids");
+        console.log(storyIds);
+        getClubhouseWorkFlowId().then((stateId) => {
+          if(storyIds!=="") updateMultipleStories(stateId, storyIds);
+        });
+      default: break;
     }
   } catch (error) {
     core.setFailed(error.message);
@@ -47,6 +56,53 @@ async function run() {
 
 run();
 
+function getClubhouseWorkFlowId(){
+  const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
+  const URL = `${CLUBHOUSE_API_BASE_URL}/workflows`;
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
+    },
+  };
+  return axios.get(URL, options).then((response) =>{
+    if(response.data !== []){
+
+      const workflow= response.data.find(workflow => workflow.name === "Engineering");
+      const deployedState = workflow.states.find(state => state.name === "Deployed");
+      return deployedState.id;
+    }
+  }).catch((error) => {
+    console.log(error);
+  })
+}
+
+
+function updateMultipleStories(stateId, storyIdsString){
+  const CLUBHOUSE_TOKEN = core.getInput("clubhouse-token")
+  const URL = `${CLUBHOUSE_API_BASE_URL}/stories/bulk`;
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
+    },
+  };
+
+  // storyIds needs to be an array of integers
+  const storyIds = storyIdsString.split(",").map(id => parseInt(id));
+  
+  const data = {
+    story_ids: storyIds,
+    workflow_state_id: stateId
+  }
+
+  axios.put(URL, data, options).then(() =>{
+    console.log(`Clubhouse stories ${storyIds} have been moved to Deployed.`);
+    
+  }).catch((error) => {
+    console.log(error);
+  })
+}
 function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
   const appId = isSourceApp
     ? core.getInput("source-app-id")
@@ -68,7 +124,7 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
     .get(herokuReleaseURL, options)
     .then((response) => {
       console.log(
-        "Checking most recent release status for app " + retries + "..."
+        "Checking most recent release status for app #" + retries + "..."
       );
       var status = null,
         appName = null,
@@ -150,10 +206,6 @@ function promoteOnHeroku() {
     .post(herokuPromoteURL, data, options)
     .then((response) => {
       pipelinePromotionID = response.data.id;
-      console.log(
-        "Pipeline promotion is created. Pipeline Promotion ID: " +
-          pipelinePromotionID
-      );
       return pipelinePromotionID;
     })
     .catch((error) => {
@@ -256,7 +308,6 @@ function collectNewCommitSHAs(lastReleaseSHA) {
         if (data[i].sha === lastReleaseSHA) break;
         collectedSHAs[collectedSHAs.length] = data[i].sha;
       }
-      console.log("CollectedSHAs are:" + collectedSHAs);
       return collectedSHAs;
     })
     .catch((error) => {
@@ -271,12 +322,19 @@ function createGithubRelease(collectedSHAs) {
     Bugfix: [],
     Chore: [],
   };
+  let clubhouseIds = "";
 
   for (var i = 0, n = collectedSHAs.length; i < n; ++i) {
     promises.push(
       getPRDetails(collectedSHAs[i]).then((response) => {
         const { category, title, clubhouseNumber } = response;
         saveToCollection(collection, category, title, clubhouseNumber);
+        if(clubhouseNumber && clubhouseNumber.trim() !== ""){
+          if (clubhouseIds !== ""){
+            clubhouseIds += ",";
+          }
+          clubhouseIds += clubhouseNumber;
+        }
       })
     );
   }
@@ -287,6 +345,7 @@ function createGithubRelease(collectedSHAs) {
       releaseBody = releaseBody.replace(/"/g, '\\"');
       console.log("Release body will be: " + releaseBody);
       core.setOutput("release-body", releaseBody);
+      core.setOutput("clubhouse-story-ids", clubhouseIds);
     })
     .catch((error) => {
       console.log(error);
@@ -303,7 +362,7 @@ function getPRDetails(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("Getting PR detail associated with the commit...");
+      console.log("Getting PR detail associated with the commit.");
 
       if (data && data.length > 0) {
         const prTitle = data[0].title;
@@ -334,7 +393,7 @@ function getCommitDetail(commitSHA) {
     .get(getPRDetailsURL, options)
     .then((response) => {
       var data = response.data;
-      console.log("No associated PR found. Getting Commit detail instead...");
+      console.log("No associated PR found. Getting Commit detail instead.");
 
       if (data) {
         const commitMessage = data.commit.message;
@@ -461,6 +520,8 @@ module.exports = {
   checkPromotionStatus: checkPromotionStatus,
   collectNewCommitSHAs: collectNewCommitSHAs,
   createGithubRelease: createGithubRelease,
+  getClubhouseWorkFlowId: getClubhouseWorkFlowId,
+  updateMultipleStories: updateMultipleStories,
   getLastHerokuReleaseStatus: getLastHerokuReleaseStatus,
   getLastReleaseSHA: getLastReleaseSHA,
   getCommitDetail: getCommitDetail,

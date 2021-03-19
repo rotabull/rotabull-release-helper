@@ -19,6 +19,12 @@ inputs:
   target-app-id:
     description: "Heroku Target APP ID"
     required: true
+  clubhouse-token:
+    description: "clubhouse token"
+    required: true
+  clubhouse-story-ids:
+    description: "clubhouse story ids to update"
+    required: true
 outputs:
   release-title:
     description: "Release title"
@@ -32,6 +38,8 @@ outputs:
     description: "Heroku Source Last Release Status"
   target-app-status:
     description: "Heroku Target Last Release Status"
+  clubhouse-story-ids:
+    description: "An array of Clubhouse Stories to update"
   message:
     description: "Extra Messages"
 runs:

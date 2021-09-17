@@ -4,15 +4,16 @@ const moment = require("moment");
 
 const REPO = "rotabull";
 const OWNER = "rotabull";
-const CLUBHOUSE_BASE_URL = "https://app.clubhouse.io/rotabull/story/";
+const CLUBHOUSE_BASE_URL = "https://app.shortcut.com/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
-const CLUBHOUSE_API_BASE_URL = "https://api.clubhouse.io/api/v3";
+const CLUBHOUSE_API_BASE_URL = "https://api.shortcut.com/api/v3";
 const PROMOTE_RETRIES = 20;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
 const newLine = "\r\n";
+const SHORTCUT_PATTERN_REGEX = /\[sc-[0-9]+\]/g;
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -41,8 +42,8 @@ async function run() {
           CHECK_STATUS_RETRIES,
           CHECK_STATUS_TIME_OUT
         );
-      case "update-clubhouse-workflow":
-        const storyIds = core.getInput("clubhouse-story-ids");
+      case "update-shortcut-workflow":
+        const storyIds = core.getInput("shortcut-story-ids");
         console.log(storyIds);
         getClubhouseWorkFlowId().then((stateId) => {
           if(storyIds!=="") updateMultipleStories(stateId, storyIds);
@@ -90,7 +91,7 @@ function updateMultipleStories(stateId, storyIdsString){
 
   // storyIds needs to be an array of integers
   const storyIds = storyIdsString.split(",").map(id => parseInt(id));
-  
+
   const data = {
     story_ids: storyIds,
     workflow_state_id: stateId
@@ -98,7 +99,7 @@ function updateMultipleStories(stateId, storyIdsString){
 
   axios.put(URL, data, options).then(() =>{
     console.log(`Clubhouse stories ${storyIds} have been moved to Deployed.`);
-    
+
   }).catch((error) => {
     console.log(error);
   })
@@ -135,7 +136,7 @@ function getLastHerokuReleaseStatus(isSourceApp, retries, timeout) {
       if (response.data && response.data.length === 0) {
         status = "succeeded";
       } else {
-        
+
         data = response.data[0]; //get the most recent
         status = data.status;
         appName = data.app.name;
@@ -440,7 +441,7 @@ function composeReleaseBody(collection) {
 
 function saveToCollection(collection, category, title, PRClubhouseNumber) {
   const clubhouseNumber = PRClubhouseNumber
-    ? `[ch${PRClubhouseNumber}]`
+    ? `[sc-${PRClubhouseNumber}]`
     : "[NoStoryID]";
   const content = `${title} ${clubhouseNumber}(${CLUBHOUSE_BASE_URL}${PRClubhouseNumber})`;
   const titles = collection[category];
@@ -458,7 +459,7 @@ function extractClubhouseStoryNumber(title, body) {
 }
 
 function extractClubhouseNumberFromPRBody(body) {
-  var rx = /https:\/\/app\.clubhouse\.io\/rotabull\/story\/[0-9]+/g;
+  var rx = /https:\/\/app\.shortcut\.com\/rotabull\/story\/[0-9]+/g;
   var arr = body.match(rx);
   if (arr === null) return null;
   const data = arr[0].split("/");
@@ -466,7 +467,7 @@ function extractClubhouseNumberFromPRBody(body) {
 }
 
 function extractClubhouseNumberFromPRTitle(title) {
-  var rx = /\[ch[0-9]+\]/g;
+  var rx = SHORTCUT_PATTERN_REGEX;
   var arr = title.match(rx);
   if (arr === null) return null;
 
@@ -487,7 +488,7 @@ function extractCategory(branchName) {
 }
 
 function extractAllClubhouseNumbersFromLastRelease(body) {
-  var rx = /\[ch[0-9]+\]/g;
+  var rx = SHORTCUT_PATTERN_REGEX;
   var rx2 = /[0-9]+/g;
   var arr = body.match(rx);
   if (arr === null) return null;
@@ -496,7 +497,7 @@ function extractAllClubhouseNumbersFromLastRelease(body) {
 }
 
 function extractTitleIgnoringClubhouseNumber(title) {
-  const rx = /\[ch[0-9]+\]/g;
+  const rx = SHORTCUT_PATTERN_REGEX;
   const replaceWith = "";
   const after = title.replace(rx, replaceWith);
   return after.trim();

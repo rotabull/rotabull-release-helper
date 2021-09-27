@@ -22,7 +22,7 @@ inputs:
   clubhouse-token:
     description: "clubhouse token"
     required: true
-  clubhouse-story-ids:
+  shortcut-story-ids:
     description: "clubhouse story ids to update"
     required: true
 outputs:
@@ -38,7 +38,7 @@ outputs:
     description: "Heroku Source Last Release Status"
   target-app-status:
     description: "Heroku Target Last Release Status"
-  clubhouse-story-ids:
+  shortcut-story-ids:
     description: "An array of Clubhouse Stories to update"
   message:
     description: "Extra Messages"

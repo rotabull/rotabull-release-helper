@@ -285,11 +285,11 @@ describe("index.js", () => {
         data: [
           {
             title:
-              "[ch3681] Properly display/download attachments from an email quote",
+              "[sc-3681] Properly display/download attachments from an email quote",
             merged_at: "2020-09-11T23:37:25Z",
             body: "blablah2",
             head: {
-              ref: "bug/ch3681",
+              ref: "bug/sc-3681",
             },
           },
         ],
@@ -353,19 +353,19 @@ describe("index.js", () => {
     });
     test("titles collection contains at least 1 element returns an non-empty body", () => {
       const collection = {
-        Feature: ["Story 1 [ch2222](www.google.com)"],
-        Bugfix: ["Story 3 [ch1234](www.google3.com)"],
-        Chore: ["Story 2 [ch3333](www.google2.com)"],
+        Feature: ["Story 1 [sc-2222](www.google.com)"],
+        Bugfix: ["Story 3 [sc-1234](www.google3.com)"],
+        Chore: ["Story 2 [sc-3333](www.google2.com)"],
       };
       const releaseBody = main.composeReleaseBody(collection);
 
       expect(releaseBody).toBe(
         "## What's Changed\r\n\r\n### Features -- ⭐️\r\n" +
-          "\r\n* Story 1 [ch2222](www.google.com)\r\n" +
+          "\r\n* Story 1 [sc-2222](www.google.com)\r\n" +
           "\r\n### Bugfixes -- 🐞\r\n" +
-          "\r\n* Story 3 [ch1234](www.google3.com)\r\n" +
+          "\r\n* Story 3 [sc-1234](www.google3.com)\r\n" +
           "\r\n### Chores -- ⚙\r\n" +
-          "\r\n* Story 2 [ch3333](www.google2.com)\r\n"
+          "\r\n* Story 2 [sc-3333](www.google2.com)\r\n"
       );
     });
   });
@@ -384,7 +384,7 @@ describe("index.js", () => {
       const expectedCollection = {
         Feature: [],
         Bugfix: [
-          "Story 1 [NoStoryID](https://app.clubhouse.io/rotabull/story/null)",
+          "Story 1 [NoStoryID](https://app.shortcut.com/rotabull/story/null)",
         ],
         Chore: [],
       };
@@ -404,7 +404,7 @@ describe("index.js", () => {
       const title = "Story 1";
       const expectedCollection = {
         Feature: [
-          "Story 1 [ch1234](https://app.clubhouse.io/rotabull/story/1234)",
+          "Story 1 [sc-1234](https://app.shortcut.com/rotabull/story/1234)",
         ],
         Bugfix: [],
         Chore: [],
@@ -415,7 +415,7 @@ describe("index.js", () => {
   });
   describe("extractClubhouseStoryNumber", () => {
     test("returns clubhouse number when PR title contains clubhouse number", () => {
-      const title = "test [ch1234]";
+      const title = "test [sc-1234]";
       const body = "I don't know";
       const chNumber = main.extractClubhouseStoryNumber(title, body);
 
@@ -424,14 +424,14 @@ describe("index.js", () => {
     test("returns clubhouse number from PR body if PR title does not contain clubhouse number", () => {
       const title = "I don't have a number";
       const body =
-        "https://app.clubhouse.io/rotabull/story/3860/release-actions-improvements-clean-up";
+        "https://app.shortcut.com/rotabull/story/3860/release-actions-improvements-clean-up";
       const chNumber = main.extractClubhouseStoryNumber(title, body);
 
       expect(chNumber).toEqual("3860");
     });
     test("returns null if no clubhouse number found in both PR title and body", () => {
       const title = "hey[ch";
-      const body = "https://app.clubhouse.io/rotabull/story/STORY_ID";
+      const body = "https://app.shortcut.com/rotabull/story/STORY_ID";
       const chNumber = main.extractClubhouseStoryNumber(title, body);
 
       expect(chNumber).toEqual(null);
@@ -447,7 +447,7 @@ describe("index.js", () => {
         "\r\n" +
         "## Clubhouse Link\r\n" +
         "\r\n" +
-        "[Clubhouse Story](https://app.clubhouse.io/rotabull/story/3681)\r\n" +
+        "[Clubhouse Story](https://app.shortcut.com/rotabull/story/3681)\r\n" +
         "\r\n" +
         "### Tests\r\n" +
         "\r\n" +
@@ -471,13 +471,13 @@ describe("index.js", () => {
   describe("extractClubhouseNumberFromPRTitle", () => {
     test("extracts clubhouse title", () => {
       const title =
-        "[ch3681] Properly display/download attachments from an email quote";
+        "[sc-3681] Properly display/download attachments from an email quote";
       const clubhouseNumber = main.extractClubhouseNumberFromPRTitle(title);
       expect(clubhouseNumber).toBe("3681");
     });
     test("return the first ocurrence only if there are more than one matched", () => {
       const title =
-        "[ch3681] Properly display/download attachments from an email quote [ch1234]";
+        "[sc-3681] Properly display/download attachments from an email quote [sc-1234]";
       const clubhouseNumber = main.extractClubhouseNumberFromPRTitle(title);
       expect(clubhouseNumber).toBe("3681");
     });
@@ -506,7 +506,7 @@ describe("index.js", () => {
   describe("extractAllClubhouseNumbersFromLastRelease", () => {
     test("last release body containing multiple clubhouse links returns an array", () => {
       const body =
-        "## What’s Changed\r\n\r\n###  Chores -- ⚙️\r\n\r\n* Appcues installation improvements [ch3617]\r\n\r\n### Bugfixes -- 🐞\r\n\r\n* Price suggestion popover on repair form [ch3481](https://app.clubhouse.io/rotabull/story/3481)\r\n";
+        "## What’s Changed\r\n\r\n###  Chores -- ⚙️\r\n\r\n* Appcues installation improvements [sc-3617]\r\n\r\n### Bugfixes -- 🐞\r\n\r\n* Price suggestion popover on repair form [sc-3481](https://app.shortcut.com/rotabull/story/3481)\r\n";
       const clubhouseNumbers = main.extractAllClubhouseNumbersFromLastRelease(
         body
       );
@@ -519,7 +519,7 @@ describe("index.js", () => {
   describe("extractTitleIgnoringClubhouseNumber", () => {
     test("extract clubhouse number correctly from clubhouse title", () => {
       const clubhouseTitle =
-        "[ch3681] Properly display/download attachments from an email quote";
+        "[sc-3681] Properly display/download attachments from an email quote";
       expect(main.extractTitleIgnoringClubhouseNumber(clubhouseTitle)).toBe(
         "Properly display/download attachments from an email quote"
       );
@@ -557,7 +557,7 @@ describe("index.js", () => {
       const params = {
         headers: {
           "Content-Type": "application/json",
-          "Clubhouse-Token": "some-ch-token"
+          "Shortcut-Token": "some-ch-token"
         },
       };
       const response = {
@@ -574,7 +574,7 @@ describe("index.js", () => {
               {
                 description: 'Stories that have been deployed to production as part of a release',
                 name: 'Deployed',
-                id: 54321            
+                id: 54321
               }
             ]
           },
@@ -590,11 +590,11 @@ describe("index.js", () => {
               {
                 description: 'Stories that have been deployed to production as part of a release',
                 name: 'Deployed',
-                id: 888888           
+                id: 888888
               }
             ]
           }
-        
+
         ],
       };
 
@@ -602,7 +602,7 @@ describe("index.js", () => {
       const workFlowId = main.getClubhouseWorkFlowId();
 
       expect(axios.get).toHaveBeenCalledWith(
-        "https://api.clubhouse.io/api/v3/workflows",
+        "https://api.app.shortcut.com/api/v3/workflows",
         params
       );
 
@@ -617,7 +617,7 @@ describe("index.js", () => {
       const params = {
         headers: {
           "Content-Type": "application/json",
-          "Clubhouse-Token": "some-ch-token"
+          "Shortcut-Token": "some-ch-token"
         },
       };
 
@@ -633,7 +633,7 @@ describe("index.js", () => {
       main.updateMultipleStories(123, "8993,6456");
 
       expect(axios.put).toHaveBeenCalledWith(
-        "https://api.clubhouse.io/api/v3/stories/bulk",
+        "https://api.app.shortcut.com/api/v3/stories/bulk",
         payload,
         params
       );

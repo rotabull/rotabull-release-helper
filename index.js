@@ -13,7 +13,7 @@ const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
 const CHECK_STATUS_TIME_OUT = 60000;
 const newLine = "\r\n";
-const SHORTCUT_PATTERN_REGEX = /\[sc-[0-9]+\]/g;
+const SHORTCUT_PATTERN_REGEX = /\[(sc-|ch)[0-9]+\]/g;
 
 async function run() {
   let actionType = core.getInput("action-type");
@@ -346,7 +346,7 @@ function createGithubRelease(collectedSHAs) {
       releaseBody = releaseBody.replace(/"/g, '\\"');
       console.log("Release body will be: " + releaseBody);
       core.setOutput("release-body", releaseBody);
-      core.setOutput("clubhouse-story-ids", clubhouseIds);
+      core.setOutput("shortcut-story-ids", clubhouseIds);
     })
     .catch((error) => {
       console.log(error);

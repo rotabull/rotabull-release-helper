@@ -558,7 +558,7 @@ describe("index.js", () => {
       const params = {
         headers: {
           "Content-Type": "application/json",
-          "Clubhouse-Token": "some-ch-token"
+          "Shortcut-Token": "some-ch-token"
         },
       };
       const response = {
@@ -603,7 +603,7 @@ describe("index.js", () => {
       const workFlowId = main.getClubhouseWorkFlowId();
 
       expect(axios.get).toHaveBeenCalledWith(
-        "https://api.shortcut.com/api/v3/workflows",
+        "https://api.app.shortcut.com/api/v3/workflows",
         params
       );
 
@@ -618,7 +618,7 @@ describe("index.js", () => {
       const params = {
         headers: {
           "Content-Type": "application/json",
-          "Clubhouse-Token": "some-ch-token"
+          "Shortcut-Token": "some-ch-token"
         },
       };
 
@@ -634,7 +634,7 @@ describe("index.js", () => {
       main.updateMultipleStories(123, "8993,6456");
 
       expect(axios.put).toHaveBeenCalledWith(
-        "https://api.shortcut.com/api/v3/stories/bulk",
+        "https://api.app.shortcut.com/api/v3/stories/bulk",
         payload,
         params
       );

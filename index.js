@@ -7,7 +7,7 @@ const OWNER = "rotabull";
 const CLUBHOUSE_BASE_URL = "https://app.shortcut.com/rotabull/story/";
 const HEROKU_API_BASE_URL = "https://api.heroku.com";
 const GITHUB_API_BASE_URL = "https://api.github.com";
-const CLUBHOUSE_API_BASE_URL = "https://api.shortcut.com/api/v3";
+const CLUBHOUSE_API_BASE_URL = "https://api.app.shortcut.com/api/v3";
 const PROMOTE_RETRIES = 20;
 const PROMOTE_TIME_OUT = 20000;
 const CHECK_STATUS_RETRIES = 20;
@@ -63,7 +63,7 @@ function getClubhouseWorkFlowId(){
   const options = {
     headers: {
       "Content-Type": "application/json",
-      "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
+      "Shortcut-Token": `${CLUBHOUSE_TOKEN}`,
     },
   };
   return axios.get(URL, options).then((response) =>{
@@ -85,7 +85,7 @@ function updateMultipleStories(stateId, storyIdsString){
   const options = {
     headers: {
       "Content-Type": "application/json",
-      "Clubhouse-Token": `${CLUBHOUSE_TOKEN}`,
+      "Shortcut-Token": `${CLUBHOUSE_TOKEN}`,
     },
   };
 
@@ -98,7 +98,7 @@ function updateMultipleStories(stateId, storyIdsString){
   }
 
   axios.put(URL, data, options).then(() =>{
-    console.log(`Clubhouse stories ${storyIds} have been moved to Deployed.`);
+    console.log(`Shortcut stories ${storyIds} have been moved to Deployed.`);
 
   }).catch((error) => {
     console.log(error);

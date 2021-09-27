@@ -2,7 +2,6 @@ const moment = require("moment");
 const axios = require("axios");
 const core = require("@actions/core");
 const main = require("../index.js");
-const { extractClubhouseNumberFromPRTitle, extractClubhouseNumberFromPRBody } = require("../index.js");
 
 //example of mocking @actions/core and @actions/github
 //https://github.com/actions/checkout/blob/master/__test__/input-helper.test.ts
